@@ -149,6 +149,26 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 }
 .add-row input::placeholder { color: var(--muted); }
 .add-row .pill-btn { min-height: 46px; padding: 0 18px; }
+/* Shopping-list checklist */
+.checklist { padding: 4px 16px; gap: 0; }
+.item {
+  display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+  min-height: 56px; padding: 10px 0; border-bottom: 1px solid var(--line);
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.item:last-child { border-bottom: 0; }
+.item .box {
+  width: 26px; height: 26px; flex: none; border-radius: 7px; border: 2px solid var(--muted);
+  display: grid; place-items: center; color: var(--accent-ink); transition: background .15s ease, border-color .15s ease;
+}
+.item .box svg { opacity: 0; transform: scale(.6); transition: .15s ease; }
+.item.done .box { background: var(--accent); border-color: var(--accent); }
+.item.done .box svg { opacity: 1; transform: none; }
+.item .name { flex: 1; min-width: 0; font-size: 16px; overflow-wrap: anywhere; }
+.item.done .name { color: var(--muted); text-decoration: line-through; }
+.item.confirm { gap: 8px; }
+.item.confirm .name { font-size: 15px; }
+
 .add-bar {
   width: 100%; min-height: 52px; border-radius: 16px; border: 1.5px dashed var(--line);
   display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -398,15 +418,17 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
         <span class="track"><span class="fill" style="height:${h}%"></span></span><span class="n">${c}</span></button>`;
     }).join("");
 
+    // shopping-list style: tick box + name, nothing else. Press and hold a row to remove it.
     const logSet = new Set(S.data.log[sel] || []);
-    const list = habits.length ? `<div class="habits">${habits.map(h => {
-      if (S.editing) {
-        return `<div class="habit"><span class="name">${esc(h.name)}</span><button class="del" data-act="del:${esc(h.id)}">${S.confirmDel === h.id ? "Tap to remove" : "Remove"}</button></div>`;
+    const list = habits.length ? `<section class="card checklist">${habits.map(h => {
+      if (S.confirmDel === h.id) {
+        return `<div class="item confirm"><span class="name">Remove “${esc(h.name)}”?</span>
+          <button class="del" data-act="del:${esc(h.id)}">Remove</button><button class="ghost-btn" data-act="delcancel">Cancel</button></div>`;
       }
       const isDone = logSet.has(h.id);
-      return `<button class="habit ${isDone ? "done" : ""}" data-act="toggle:${esc(h.id)}" aria-pressed="${isDone}">
+      return `<button class="item ${isDone ? "done" : ""}" data-act="toggle:${esc(h.id)}" data-hold="${esc(h.id)}" aria-pressed="${isDone}">
         <span class="box">${ICON.check}</span><span class="name">${esc(h.name)}</span></button>`;
-    }).join("")}</div>` : "";
+    }).join("")}</section>` : "";
 
     const adder = S.adding
       ? `<form class="add-row" id="habitForm" autocomplete="off"><input id="habitInput" maxlength="60" placeholder="New daily task" enterkeyhint="done" aria-label="New daily task"><button class="pill-btn" type="submit">Add</button><button class="x" type="button" data-act="addclose" aria-label="Cancel">${ICON.close}</button></form>`
@@ -416,14 +438,13 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
       <div class="week">${week}</div>
       <section class="card">
         <div class="mini-h">
-          <div><div class="eyebrow">${esc(dayLabel)}</div>
-          <h2 style="margin-top:2px">${total ? `${done} of ${total} done` : "Daily tasks"}</h2></div>
-          ${habits.length ? `<button class="link" data-act="edit">${S.editing ? "Done" : "Edit"}</button>` : ""}
+          <div class="eyebrow">${esc(dayLabel)}</div>
+          <span class="muted" style="font-size:13px">${total ? `${done} of ${total} done` : "last 10 days"}</span>
         </div>
         <div class="mini" role="group" aria-label="Tasks completed, last 10 days">${mini}</div>
-        ${list}
-        ${S.editing ? "" : adder}
       </section>
+      ${list}
+      ${adder}
       <section class="stats">
         <div class="stat"><b>${streak()}</b><small>day streak</small></div>
         <div class="stat"><b>${bestStreak()}</b><small>best streak</small></div>
@@ -561,7 +582,27 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
   }
 
   // ---------- actions ----------
+  // press and hold a checklist row (~0.5s) to ask whether to remove it
+  let holdTimer = null, holdXY = null, held = false;
+  const endHold = () => { clearTimeout(holdTimer); holdTimer = null; };
+  document.addEventListener("pointerdown", e => {
+    held = false;
+    const row = e.target.closest("[data-hold]"); if (!row) return;
+    holdXY = [e.clientX, e.clientY];
+    holdTimer = setTimeout(() => {
+      held = true; S.confirmDel = row.dataset.hold; S.adding = false;
+      if (navigator.vibrate) navigator.vibrate(15);
+      render();
+    }, 500);
+  });
+  document.addEventListener("pointermove", e => {
+    if (holdTimer && holdXY && Math.hypot(e.clientX - holdXY[0], e.clientY - holdXY[1]) > 10) endHold();
+  });
+  ["pointerup", "pointercancel", "scroll"].forEach(t => document.addEventListener(t, endHold, true));
+  document.addEventListener("contextmenu", e => { if (e.target.closest("[data-hold]")) e.preventDefault(); });
+
   document.addEventListener("click", e => {
+    if (held) { held = false; e.preventDefault(); return; }
     const b = e.target.closest("[data-act]"); if (!b) return;
     const [act, ...rest] = b.dataset.act.split(":"); const arg = rest.join(":");
     if (act !== "del" && act !== "gdel") S.confirmDel = null;
@@ -571,6 +612,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
       case "edit": S.editing = !S.editing; S.adding = false; break;
       case "addopen": S.adding = true; render(); { const i = document.getElementById("habitInput"); if (i) i.focus(); } return;
       case "addclose": S.adding = false; break;
+      case "delcancel": S.confirmDel = null; break;
       case "theme": {
         const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
         document.documentElement.dataset.theme = next; store.set("theme", next); syncThemeColor(); break;
