@@ -33,7 +33,7 @@
   --grey: #7e7b73;
   --font-display: "Sora", "Inter", system-ui, -apple-system, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --radius: 20px;
+  --radius: 10px;
 }
 :root, [data-theme="dark"] {
   --bg: var(--charcoal);
@@ -96,28 +96,16 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 .eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
 .muted { color: var(--muted); }
 .pill-btn {
-  min-height: 34px; padding: 0 14px; border-radius: 10px; background: var(--accent); color: var(--accent-ink);
+  min-height: 34px; padding: 0 14px; border-radius: 6px; background: var(--accent); color: var(--accent-ink);
   font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;
 }
-.ghost-btn { min-height: 34px; padding: 0 12px; border-radius: 10px; background: var(--surface-2); color: var(--fg); font-weight: 500; font-size: 14px; }
+.ghost-btn { min-height: 34px; padding: 0 12px; border-radius: 6px; background: var(--surface-2); color: var(--fg); font-weight: 500; font-size: 14px; }
 
 /* Stat tiles */
 .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.stat { background: var(--surface-2); border-radius: 12px; padding: 10px 8px; text-align: center; }
+.stat { background: var(--surface-2); border-radius: 8px; padding: 10px 8px; text-align: center; }
 .stat b { display: block; font: 600 19px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
 .stat small { color: var(--muted); font-size: 12px; }
-
-/* Week strip */
-.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
-.wd {
-  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 9px;
-  border-radius: 14px; background: var(--surface); color: var(--muted); min-height: 72px;
-}
-.wd b { font: 600 16px/1 var(--font-display); color: var(--fg); font-variant-numeric: tabular-nums; }
-.wd small { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
-.wd[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
-.wd[aria-pressed="true"] b { color: var(--accent-ink); }
-.ring { width: 18px; height: 18px; }
 
 /* Progress bar */
 .bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
@@ -127,11 +115,11 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 .habits { display: flex; flex-direction: column; gap: 8px; }
 .habit {
   display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
-  min-height: 60px; padding: 10px 12px; border-radius: 16px; background: var(--surface-2);
+  min-height: 60px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2);
   transition: background .15s ease;
 }
 .habit .box {
-  width: 30px; height: 30px; flex: none; border-radius: 9px; border: 2px solid var(--line);
+  width: 30px; height: 30px; flex: none; border-radius: 5px; border: 2px solid var(--line);
   display: grid; place-items: center; transition: background .15s ease, border-color .15s ease;
   color: var(--accent-ink);
 }
@@ -140,11 +128,11 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 .habit.done .box svg { opacity: 1; transform: none; }
 .habit .name { flex: 1; min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
 .habit.done .name { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
-.del { min-height: 34px; padding: 0 12px; border-radius: 10px; background: transparent; border: 1.5px solid var(--fg); color: var(--fg); font-weight: 600; font-size: 13px; flex: none; }
+.del { min-height: 34px; padding: 0 12px; border-radius: 6px; background: transparent; border: 1.5px solid var(--fg); color: var(--fg); font-weight: 600; font-size: 13px; flex: none; }
 
 .add-row { display: flex; gap: 8px; }
 .add-row input {
-  flex: 1; min-width: 0; min-height: 46px; padding: 0 14px; border-radius: 12px;
+  flex: 1; min-width: 0; min-height: 46px; padding: 0 14px; border-radius: 8px;
   border: 1px solid var(--line); background: var(--bg); font-size: 16px;
 }
 .add-row input::placeholder { color: var(--muted); }
@@ -158,7 +146,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 }
 .item:last-child { border-bottom: 0; }
 .item .box {
-  width: 26px; height: 26px; flex: none; border-radius: 7px; border: 2px solid var(--muted);
+  width: 26px; height: 26px; flex: none; border-radius: 5px; border: 2px solid var(--muted);
   display: grid; place-items: center; color: var(--accent-ink); transition: background .15s ease, border-color .15s ease;
 }
 .item .box svg { opacity: 0; transform: scale(.6); transition: .15s ease; }
@@ -170,25 +158,21 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 .item.confirm .name { font-size: 15px; }
 
 .add-bar {
-  width: 100%; min-height: 52px; border-radius: 16px; border: 1.5px dashed var(--line);
+  width: 100%; min-height: 52px; border-radius: 8px; border: 1.5px dashed var(--line);
   display: flex; align-items: center; justify-content: center; gap: 8px;
   color: var(--muted); font-weight: 600; font-size: 15px;
 }
 .add-bar svg { flex: none; }
-.add-row .x { width: 46px; min-height: 46px; border-radius: 12px; background: var(--surface-2); display: grid; place-items: center; flex: none; color: var(--fg); }
+.add-row .x { width: 46px; min-height: 46px; border-radius: 8px; background: var(--surface-2); display: grid; place-items: center; flex: none; color: var(--fg); }
 
-/* Mini 10-day chart */
+/* Mini 10-day line chart */
 .mini-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.mini-h h2 { font: 600 17px/1.2 var(--font-display); margin: 0; }
-.mini-h .link { color: var(--muted); font-size: 14px; font-weight: 600; min-height: 32px; padding: 0 4px; }
-.mini { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; align-items: end; }
-.mini button { display: flex; flex-direction: column; align-items: center; gap: 5px; min-height: 44px; }
-.mini .track { width: 100%; height: 56px; border-radius: 7px; background: var(--surface-2); display: flex; align-items: flex-end; overflow: hidden; }
-.mini .fill { width: 100%; background: var(--muted); border-radius: 7px; min-height: 0; transition: height .25s ease; }
-.mini .n { font-size: 11px; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1; }
-.mini [aria-pressed="true"] .fill { background: var(--fg); }
-.mini [aria-pressed="true"] .n { color: var(--fg); }
-.mini [aria-pressed="true"] .track { box-shadow: inset 0 0 0 1.5px var(--fg); }
+.line svg { display: block; width: 100%; height: auto; overflow: visible; }
+.line text { font: 600 10px var(--font-body); fill: var(--muted); font-variant-numeric: tabular-nums; }
+.line text.on { fill: var(--fg); }
+.line .hit { fill: transparent; cursor: pointer; }
+.sample { display: flex; justify-content: center; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.sample button { color: var(--fg); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; min-height: 36px; padding: 0 4px; }
 
 /* Heatmap */
 .heat-wrap { display: flex; flex-direction: column; gap: 4px; }
@@ -204,8 +188,8 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 .legend .cell { width: 11px; }
 
 /* Chart */
-.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; }
-.seg button { min-height: 30px; padding: 0 11px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 6px; padding: 3px; gap: 2px; }
+.seg button { min-height: 30px; padding: 0 11px; border-radius: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
 .seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
 .seg.wide { display: grid; grid-template-columns: repeat(4, 1fr); }
 .readout { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; font-size: 13px; min-height: 20px; }
@@ -220,7 +204,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 
 /* Goals */
 .pnav { display: flex; align-items: center; gap: 10px; }
-.pnav .arrow { width: 40px; height: 40px; border-radius: 12px; background: var(--surface-2); display: grid; place-items: center; flex: none; }
+.pnav .arrow { width: 40px; height: 40px; border-radius: 8px; background: var(--surface-2); display: grid; place-items: center; flex: none; }
 .pnav .mid { flex: 1; text-align: center; min-width: 0; }
 .pnav .mid b { display: block; font: 600 17px/1.2 var(--font-display); }
 .pnav .mid small { color: var(--muted); font-size: 12px; }
@@ -287,9 +271,26 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     set(k, v) { try { localStorage.setItem(k, v); return true; } catch { return false; } }
   };
 
+  // sample tasks and ~4 months of history so a first visit shows what the app looks like
+  function sampleData() {
+    const habits = [["Gym / workout", .7], ["Read 20 minutes", .8], ["Drink 2L water", .85], ["Walk 8,000 steps", .6], ["Meditate 10 min", .5]]
+      .map(([name, p], i) => ({ id: "s" + i, name, p }));
+    let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const log = {}, t = today();
+    for (let i = 1; i <= 120; i++) {
+      const d = addDays(t, -i), weekend = d.getDay() === 0 || d.getDay() === 6;
+      const ids = habits.filter(h => rnd() < h.p - (weekend ? .2 : 0)).map(h => h.id);
+      if (ids.length) log[keyOf(d)] = ids;
+    }
+    log[keyOf(t)] = ["s1", "s2"];
+    return { v: 1, sample: true, habits: habits.map(({ id, name }) => ({ id, name })), log, goals: {} };
+  }
+
   function load() {
     let d = null;
     try { d = JSON.parse(store.get(DATA_KEY)); } catch {}
+    const empty = !d || typeof d !== "object" || (!(d.habits || []).length && !Object.keys(d.log || {}).length && !Object.keys(d.goals || {}).length);
+    if (empty && store.get("sampleCleared") !== "1") { d = sampleData(); store.set(DATA_KEY, JSON.stringify(d)); }
     if (!d || typeof d !== "object") d = blank();
     d.habits = Array.isArray(d.habits) ? d.habits : [];
     d.log = d.log && typeof d.log === "object" ? d.log : {};
@@ -400,23 +401,30 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     const sel = S.day, selDate = new Date(sel + "T00:00:00");
     const done = doneOn(sel), total = habits.length;
 
-    const week = Array.from({ length: 7 }, (_, i) => addDays(t, i - 6)).map(d => {
-      const k = keyOf(d), f = total ? Math.min(1, doneOn(k) / total) : 0, C = 2 * Math.PI * 7;
-      return `<button class="wd" data-act="day:${k}" aria-pressed="${k === sel}" aria-label="${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}">
-        <small>${DOW[d.getDay()].slice(0, 3)}</small><b>${d.getDate()}</b>
-        <svg class="ring" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="${k === sel ? "var(--accent-ink)" : "var(--line)"}" stroke-opacity="${k === sel ? ".25" : "1"}" stroke-width="2.5"/>
-        <circle cx="9" cy="9" r="7" fill="none" stroke="${k === sel ? "var(--accent-ink)" : "var(--fg)"}" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${(f * C).toFixed(2)} ${C.toFixed(2)}" transform="rotate(-90 9 9)"/></svg>
-      </button>`;
-    }).join("");
-
     const dayLabel = sel === keyOf(t) ? "Today" : sel === keyOf(addDays(t, -1)) ? "Yesterday" : DOW[selDate.getDay()] + " " + selDate.getDate() + " " + MON[selDate.getMonth()];
 
-    // last 10 days, tasks completed per day; tap a bar to look at that day
-    const mini = Array.from({ length: 10 }, (_, i) => addDays(t, i - 9)).map(d => {
-      const k = keyOf(d), c = doneOn(k), h = total ? Math.round(100 * Math.min(1, c / total)) : 0;
-      return `<button data-act="day:${k}" aria-pressed="${k === sel}" aria-label="${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}: ${c} done">
-        <span class="track"><span class="fill" style="height:${h}%"></span></span><span class="n">${c}</span></button>`;
-    }).join("");
+    // last 10 days as a line chart, one point per day; tap a day to see its checklist
+    const days10 = Array.from({ length: 10 }, (_, i) => addDays(t, i - 9));
+    const vals = days10.map(d => doneOn(keyOf(d)));
+    const VW = 320, VH = 124, PL = 12, PR = 12, PT = 20, PB = 22;
+    const yMax = Math.max(1, total, ...vals);
+    const px = i => PL + i * (VW - PL - PR) / 9, py = v => PT + (VH - PT - PB) * (1 - v / yMax);
+    const pts = vals.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`);
+    let line = `<svg viewBox="0 0 ${VW} ${VH}" role="group" aria-label="Tasks completed, last 10 days">
+      <line x1="${PL}" x2="${VW - PR}" y1="${py(yMax)}" y2="${py(yMax)}" stroke="var(--line)" stroke-dasharray="2 4"/>
+      <line x1="${PL}" x2="${VW - PR}" y1="${py(0)}" y2="${py(0)}" stroke="var(--line)"/>
+      <path d="M${pts.join("L")}L${px(9)},${py(0)}L${px(0)},${py(0)}Z" fill="var(--fg)" opacity=".07"/>
+      <path d="M${pts.join("L")}" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    days10.forEach((d, i) => {
+      const k = keyOf(d), on = k === sel, x = px(i), y = py(vals[i]);
+      line += on
+        ? `<circle cx="${x}" cy="${y}" r="6" fill="var(--fg)" stroke="var(--surface)" stroke-width="2.5"/>`
+        : `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--surface)" stroke="var(--fg)" stroke-width="2"/>`;
+      line += `<text x="${x}" y="${y - 10}" text-anchor="middle" class="${on ? "on" : ""}">${vals[i]}</text>`;
+      line += `<text x="${x}" y="${VH - 5}" text-anchor="middle" class="${on ? "on" : ""}">${d.getDate()}</text>`;
+      line += `<rect class="hit" x="${x - (VW - PL - PR) / 18}" y="0" width="${(VW - PL - PR) / 9}" height="${VH}" data-act="day:${k}"><title>${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}: ${vals[i]} done</title></rect>`;
+    });
+    line += `</svg>`;
 
     // shopping-list style: tick box + name, nothing else. Press and hold a row to remove it.
     const logSet = new Set(S.data.log[sel] || []);
@@ -435,16 +443,16 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
       : `<button class="add-bar" data-act="addopen">${ICON.plus}<span>Add daily task</span></button>`;
 
     return `
-      <div class="week">${week}</div>
       <section class="card">
         <div class="mini-h">
           <div class="eyebrow">${esc(dayLabel)}</div>
           <span class="muted" style="font-size:13px">${total ? `${done} of ${total} done` : "last 10 days"}</span>
         </div>
-        <div class="mini" role="group" aria-label="Tasks completed, last 10 days">${mini}</div>
+        <div class="line">${line}</div>
       </section>
       ${list}
       ${adder}
+      ${S.data.sample ? `<div class="sample">Showing sample data <button data-act="clearsample">${S.confirmDel === "__sample" ? "Tap again to clear" : "Clear it"}</button></div>` : ""}
       <section class="stats">
         <div class="stat"><b>${streak()}</b><small>day streak</small></div>
         <div class="stat"><b>${bestStreak()}</b><small>best streak</small></div>
@@ -605,7 +613,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     if (held) { held = false; e.preventDefault(); return; }
     const b = e.target.closest("[data-act]"); if (!b) return;
     const [act, ...rest] = b.dataset.act.split(":"); const arg = rest.join(":");
-    if (act !== "del" && act !== "gdel") S.confirmDel = null;
+    if (act !== "del" && act !== "gdel" && act !== "clearsample") S.confirmDel = null;
     switch (act) {
       case "tab": S.tab = arg; S.editing = false; S.hover = null; store.set("tab", arg); window.scrollTo(0, 0); break;
       case "day": S.day = arg; break;
@@ -613,6 +621,10 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
       case "addopen": S.adding = true; render(); { const i = document.getElementById("habitInput"); if (i) i.focus(); } return;
       case "addclose": S.adding = false; break;
       case "delcancel": S.confirmDel = null; break;
+      case "clearsample": {
+        if (S.confirmDel !== "__sample") { S.confirmDel = "__sample"; break; }
+        S.confirmDel = null; S.data = blank(); store.set("sampleCleared", "1"); commit(); return;
+      }
       case "theme": {
         const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
         document.documentElement.dataset.theme = next; store.set("theme", next); syncThemeColor(); break;
