@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daily Streaks</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Streaks">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#242422">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap">
+<script>
+// apply the saved theme before first paint so there is no flash
+(() => {
+  let t = null; try { t = localStorage.getItem("theme"); } catch {}
+  if (t !== "light" && t !== "dark") t = matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  document.documentElement.dataset.theme = t;
+})();
+</script>
+<style>
+/* Layout: single phone column (max 480px), cards on a plain ground, fixed bottom tab bar.
+   Palette is exactly three colours: bone white, dark grey, and one mid grey readable on both.
+   Surfaces and lines are mixes of bone and dark grey, never a new hue. Light/dark via [data-theme]. */
+:root {
+  --bone: #ece6da;
+  --charcoal: #242422;
+  --grey: #7e7b73;
+  --font-display: "Sora", "Inter", system-ui, -apple-system, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --radius: 20px;
+}
+:root, [data-theme="dark"] {
+  --bg: var(--charcoal);
+  --surface: color-mix(in srgb, var(--bone) 6%, var(--charcoal));
+  --surface-2: color-mix(in srgb, var(--bone) 11%, var(--charcoal));
+  --line: color-mix(in srgb, var(--bone) 20%, var(--charcoal));
+  --fg: var(--bone);
+  --muted: var(--grey);
+  --accent: var(--bone);
+  --accent-ink: var(--charcoal);
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --bg: var(--bone);
+  --surface: color-mix(in srgb, var(--charcoal) 5%, var(--bone));
+  --surface-2: color-mix(in srgb, var(--charcoal) 10%, var(--bone));
+  --line: color-mix(in srgb, var(--charcoal) 20%, var(--bone));
+  --fg: var(--charcoal);
+  --muted: var(--grey);
+  --accent: var(--charcoal);
+  --accent-ink: var(--bone);
+  color-scheme: light;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html { background: var(--bg); }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.45 var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  min-height: 100%;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; padding: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Header */
+.top { display: flex; align-items: center; gap: 12px; min-height: 42px; }
+.top h1 { font: 600 21px/1.15 var(--font-display); margin: 0; letter-spacing: -0.01em; flex: 1; min-width: 0; }
+.top h1 span { color: var(--muted); font-weight: 500; }
+.theme-btn { width: 38px; height: 38px; border-radius: 50%; background: var(--surface-2); color: var(--fg); display: grid; place-items: center; flex: none; }
+
+/* Cards */
+.card { background: var(--surface); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.card-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.card-h h2 { font: 600 17px/1.2 var(--font-display); margin: 0; }
+.eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+.pill-btn {
+  min-height: 34px; padding: 0 14px; border-radius: 10px; background: var(--accent); color: var(--accent-ink);
+  font-weight: 600; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;
+}
+.ghost-btn { min-height: 34px; padding: 0 12px; border-radius: 10px; background: var(--surface-2); color: var(--fg); font-weight: 500; font-size: 14px; }
+
+/* Stat tiles */
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.stat { background: var(--surface-2); border-radius: 12px; padding: 10px 8px; text-align: center; }
+.stat b { display: block; font: 600 19px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.stat small { color: var(--muted); font-size: 12px; }
+
+/* Week strip */
+.week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.wd {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 9px;
+  border-radius: 14px; background: var(--surface); color: var(--muted); min-height: 72px;
+}
+.wd b { font: 600 16px/1 var(--font-display); color: var(--fg); font-variant-numeric: tabular-nums; }
+.wd small { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+.wd[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.wd[aria-pressed="true"] b { color: var(--accent-ink); }
+.ring { width: 18px; height: 18px; }
+
+/* Progress bar */
+.bar { height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .3s ease; }
+
+/* Habit list */
+.habits { display: flex; flex-direction: column; gap: 8px; }
+.habit {
+  display: flex; align-items: center; gap: 12px; width: 100%; text-align: left;
+  min-height: 60px; padding: 10px 12px; border-radius: 16px; background: var(--surface-2);
+  transition: background .15s ease;
+}
+.habit .box {
+  width: 30px; height: 30px; flex: none; border-radius: 9px; border: 2px solid var(--line);
+  display: grid; place-items: center; transition: background .15s ease, border-color .15s ease;
+  color: var(--accent-ink);
+}
+.habit .box svg { opacity: 0; transform: scale(.6); transition: .15s ease; }
+.habit.done .box { background: var(--accent); border-color: var(--accent); }
+.habit.done .box svg { opacity: 1; transform: none; }
+.habit .name { flex: 1; min-width: 0; font-weight: 500; overflow-wrap: anywhere; }
+.habit.done .name { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--line); }
+.dots { display: flex; gap: 3px; flex: none; }
+.dots i { width: 6px; height: 6px; border-radius: 2px; background: var(--line); display: block; }
+.dots i.on { background: var(--accent); }
+.del { min-height: 34px; padding: 0 12px; border-radius: 10px; background: transparent; border: 1.5px solid var(--fg); color: var(--fg); font-weight: 600; font-size: 13px; flex: none; }
+
+.add-row { display: flex; gap: 8px; }
+.add-row input {
+  flex: 1; min-width: 0; min-height: 46px; padding: 0 14px; border-radius: 12px;
+  border: 1px solid var(--line); background: var(--bg); font-size: 16px;
+}
+.add-row input::placeholder { color: var(--muted); }
+.add-row .pill-btn { min-height: 46px; padding: 0 18px; }
+.suggest { display: flex; flex-wrap: wrap; gap: 8px; }
+.suggest button { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px dashed var(--line); color: var(--fg); font-size: 14px; }
+
+/* Heatmap */
+.heat-wrap { display: flex; flex-direction: column; gap: 4px; }
+.heat-months, .heat { display: grid; grid-template-columns: 14px repeat(var(--weeks), 1fr); column-gap: 3px; }
+.heat { grid-template-rows: repeat(7, auto); grid-auto-flow: column; row-gap: 3px; }
+.heat-months span { font-size: 10px; color: var(--muted); white-space: nowrap; }
+.heat .lbl { font-size: 9px; color: var(--muted); line-height: 1; align-self: center; }
+.cell { aspect-ratio: 1; border-radius: 3px; background: var(--surface-2); position: relative; }
+.cell::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--fg); opacity: var(--o, 0); }
+.cell.future { background: transparent; }
+.cell.today { box-shadow: 0 0 0 1.5px var(--fg); }
+.legend { display: flex; align-items: center; justify-content: flex-end; gap: 4px; font-size: 11px; color: var(--muted); }
+.legend .cell { width: 11px; }
+
+/* Chart */
+.seg { display: inline-flex; background: var(--surface-2); border-radius: 10px; padding: 3px; gap: 2px; }
+.seg button { min-height: 30px; padding: 0 11px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.seg.wide { display: grid; grid-template-columns: repeat(4, 1fr); }
+.readout { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; font-size: 13px; min-height: 20px; }
+.readout .d { color: var(--muted); }
+.readout b { font-variant-numeric: tabular-nums; }
+#chart { width: 100%; touch-action: pan-y; }
+#chart svg { display: block; width: 100%; height: auto; }
+#chart text { fill: var(--muted); font: 10px var(--font-body); font-variant-numeric: tabular-nums; }
+.goal-line { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { font-size: 12px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-variant-numeric: tabular-nums; }
+.tag b { color: var(--fg); font-weight: 600; }
+
+/* Goals */
+.pnav { display: flex; align-items: center; gap: 10px; }
+.pnav .arrow { width: 40px; height: 40px; border-radius: 12px; background: var(--surface-2); display: grid; place-items: center; flex: none; }
+.pnav .mid { flex: 1; text-align: center; min-width: 0; }
+.pnav .mid b { display: block; font: 600 17px/1.2 var(--font-display); }
+.pnav .mid small { color: var(--muted); font-size: 12px; }
+.goal { display: flex; align-items: center; gap: 10px; }
+.goal .habit { flex: 1; min-width: 0; }
+
+/* Notices and empty states */
+.notice { background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+.notice b { font: 600 16px/1.3 var(--font-display); }
+.empty { text-align: center; padding: 22px 8px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.empty b { color: var(--fg); font: 600 16px/1.3 var(--font-display); }
+
+/* Tab bar */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  background: color-mix(in srgb, var(--bg) 92%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-top: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.tabbar nav { max-width: 480px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); }
+.tabbar button { min-height: 62px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); font-size: 12px; font-weight: 600; }
+.tabbar button[aria-current="page"] { color: var(--accent); }
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="tabbar"><nav id="tabs"></nav></div>
+
+<script>
+(() => {
+  const DATA_KEY = "dailyStreaks.v1";
+  const SUGGESTIONS = ["Gym / workout", "Read 20 minutes", "Drink 2L water", "Walk 8,000 steps", "No phone first hour", "Meditate 10 min", "Journal", "In bed by 11pm"];
+  const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const MONTH = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+  const SCOPES = { w: "Weekly", m: "Monthly", q: "Quarterly", y: "Yearly" };
+
+  const ICON = {
+    check: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    home: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5V19a1 1 0 01-1 1h-4.5v-5.5h-5V20H5a1 1 0 01-1-1v-8.5z" fill="currentColor"/></svg>',
+    board: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="4" y="12" width="4" height="8" rx="1.2" fill="currentColor"/><rect x="10" y="7" width="4" height="13" rx="1.2" fill="currentColor"/><rect x="16" y="4" width="4" height="16" rx="1.2" fill="currentColor"/></svg>',
+    flag: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M6 21V4m0 0h11l-2.5 4L17 12H6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    left: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    sun: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="3.6" fill="currentColor"/><path d="M10 1.8v2.2M10 16v2.2M1.8 10H4M16 10h2.2M4.2 4.2l1.6 1.6M14.2 14.2l1.6 1.6M4.2 15.8l1.6-1.6M14.2 5.8l1.6-1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
+    moon: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.5 12.4A7 7 0 017.6 3.5a7 7 0 108.9 8.9z" fill="currentColor"/></svg>',
+    right: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M7 4l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+  };
+
+  // ---------- helpers ----------
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const pad = n => String(n).padStart(2, "0");
+  const keyOf = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
+  const today = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const blank = () => ({ v: 1, habits: [], log: {}, goals: {} });
+  const store = {
+    get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+    set(k, v) { try { localStorage.setItem(k, v); return true; } catch { return false; } }
+  };
+
+  function load() {
+    let d = null;
+    try { d = JSON.parse(store.get(DATA_KEY)); } catch {}
+    if (!d || typeof d !== "object") d = blank();
+    d.habits = Array.isArray(d.habits) ? d.habits : [];
+    d.log = d.log && typeof d.log === "object" ? d.log : {};
+    d.goals = d.goals && typeof d.goals === "object" ? d.goals : {};
+    return d;
+  }
+
+  // ---------- state ----------
+  const S = {
+    tab: ["today", "board", "goals"].includes(store.get("tab")) ? store.get("tab") : "today",
+    data: load(),
+    day: keyOf(today()),
+    editing: false, confirmDel: null,
+    range: 30, hover: null,
+    gScope: "w", gOffset: 0,
+    saveErr: false
+  };
+
+  const dayCount = k => (S.data.log[k] || []).length;
+  const doneOn = k => { const set = new Set(S.data.log[k] || []); return S.data.habits.filter(h => set.has(h.id)).length; };
+  function streak() {
+    let d = today(), n = 0;
+    if (!dayCount(keyOf(d))) d = addDays(d, -1);
+    while (dayCount(keyOf(d)) > 0) { n++; d = addDays(d, -1); }
+    return n;
+  }
+  function bestStreak() {
+    const keys = Object.keys(S.data.log).filter(k => S.data.log[k].length).sort();
+    let best = 0, run = 0, prev = null;
+    for (const k of keys) {
+      const d = new Date(k + "T00:00:00");
+      run = prev && keyOf(addDays(prev, 1)) === k ? run + 1 : 1;
+      best = Math.max(best, run); prev = d;
+    }
+    return best;
+  }
+  function rate(days) {
+    const n = S.data.habits.length; if (!n) return 0;
+    let sum = 0;
+    for (let i = 0; i < days; i++) sum += Math.min(n, dayCount(keyOf(addDays(today(), -i))));
+    return Math.round(100 * sum / (n * days));
+  }
+
+  function period(scope, offset) {
+    const t = today();
+    if (scope === "w") {
+      const start = addDays(t, -((t.getDay() + 6) % 7) + offset * 7), end = addDays(start, 6);
+      const label = offset === 0 ? "This week" : offset === -1 ? "Last week" : offset === 1 ? "Next week" : "Week of " + start.getDate() + " " + MON[start.getMonth()];
+      return { key: "w:" + keyOf(start), label, sub: start.getDate() + " " + MON[start.getMonth()] + " – " + end.getDate() + " " + MON[end.getMonth()], end };
+    }
+    if (scope === "m") {
+      const d = new Date(t.getFullYear(), t.getMonth() + offset, 1);
+      return { key: "m:" + d.getFullYear() + "-" + pad(d.getMonth() + 1), label: MONTH[d.getMonth()] + " " + d.getFullYear(), sub: offset === 0 ? "This month" : "", end: new Date(d.getFullYear(), d.getMonth() + 1, 0) };
+    }
+    if (scope === "q") {
+      const idx = t.getFullYear() * 4 + Math.floor(t.getMonth() / 3) + offset, y = Math.floor(idx / 4), q = idx % 4;
+      return { key: "q:" + y + "-" + (q + 1), label: "Q" + (q + 1) + " " + y, sub: MON[q * 3] + " – " + MON[q * 3 + 2] + (offset === 0 ? " · this quarter" : ""), end: new Date(y, q * 3 + 3, 0) };
+    }
+    const y = t.getFullYear() + offset;
+    return { key: "y:" + y, label: String(y), sub: offset === 0 ? "This year" : "", end: new Date(y, 11, 31) };
+  }
+  const goalsFor = key => S.data.goals[key] || [];
+
+  // ---------- saving (on this device) ----------
+  function commit() {
+    S.data.updated = new Date().toISOString();
+    S.saveErr = !store.set(DATA_KEY, JSON.stringify(S.data));
+    render();
+  }
+
+  // ---------- render ----------
+  const app = document.getElementById("app");
+  const tabs = document.getElementById("tabs");
+
+  function render() {
+    // keep focus and typed text across re-renders
+    const a = document.activeElement, focusId = a && a.id, val = a && a.value, sel = a && a.selectionStart;
+    const drafts = {}; app.querySelectorAll("input[id]").forEach(i => drafts[i.id] = i.value);
+
+    app.innerHTML = header() + body();
+    tabs.innerHTML = [["today", "Today", ICON.home], ["board", "Board", ICON.board], ["goals", "Goals", ICON.flag]]
+      .map(([k, l, ic]) => `<button data-act="tab:${k}" ${S.tab === k ? 'aria-current="page"' : ""}>${ic}<span>${l}</span></button>`).join("");
+
+    app.querySelectorAll("input[id]").forEach(i => { if (drafts[i.id] != null) i.value = drafts[i.id]; });
+    if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (val != null && el.setSelectionRange) try { el.setSelectionRange(sel, sel); } catch {} } }
+    if (S.tab === "board") drawChart();
+  }
+
+  function header() {
+    const t = today();
+    const title = S.tab === "today" ? `Today<span>, ${t.getDate()} ${MON[t.getMonth()]}</span>` : S.tab === "board" ? "Board" : "Goals";
+    const dark = document.documentElement.dataset.theme !== "light";
+    const themeBtn = `<button class="theme-btn" data-act="theme" aria-label="Switch to ${dark ? "light" : "dark"} theme">${dark ? ICON.sun : ICON.moon}</button>`;
+    return `<header class="top"><h1>${title}</h1>${themeBtn}</header>`;
+  }
+
+  function body() {
+    const n = S.saveErr ? `<div class="notice"><b>Couldn't save</b><span class="muted">This browser isn't letting the page store data. If you're in private browsing, open it in a normal tab.</span></div>` : "";
+    if (S.tab === "board") return n + boardView();
+    if (S.tab === "goals") return n + goalsView();
+    return n + todayView();
+  }
+
+  // ----- Today -----
+  function todayView() {
+    const habits = S.data.habits;
+    const t = today();
+    const sel = S.day, selDate = new Date(sel + "T00:00:00");
+    const done = doneOn(sel), total = habits.length;
+    const pct = total ? Math.round(100 * done / total) : 0;
+
+    const week = Array.from({ length: 7 }, (_, i) => addDays(t, i - 6)).map(d => {
+      const k = keyOf(d), f = total ? Math.min(1, doneOn(k) / total) : 0, C = 2 * Math.PI * 7;
+      return `<button class="wd" data-act="day:${k}" aria-pressed="${k === sel}" aria-label="${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}">
+        <small>${DOW[d.getDay()].slice(0, 3)}</small><b>${d.getDate()}</b>
+        <svg class="ring" viewBox="0 0 18 18"><circle cx="9" cy="9" r="7" fill="none" stroke="${k === sel ? "var(--accent-ink)" : "var(--line)"}" stroke-opacity="${k === sel ? ".25" : "1"}" stroke-width="2.5"/>
+        <circle cx="9" cy="9" r="7" fill="none" stroke="${k === sel ? "var(--accent-ink)" : "var(--fg)"}" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="${(f * C).toFixed(2)} ${C.toFixed(2)}" transform="rotate(-90 9 9)"/></svg>
+      </button>`;
+    }).join("");
+
+    const dayLabel = sel === keyOf(t) ? "Today" : sel === keyOf(addDays(t, -1)) ? "Yesterday" : DOW[selDate.getDay()] + " " + selDate.getDate() + " " + MON[selDate.getMonth()];
+
+    let list;
+    if (!habits.length) {
+      list = `<div class="empty"><b>Set up your daily habits</b><span>Add the things you want to do every day. Tap one below to start, or type your own.</span></div>
+        <div class="suggest">${SUGGESTIONS.map(s => `<button data-act="suggest:${esc(s)}">+ ${esc(s)}</button>`).join("")}</div>`;
+    } else {
+      const logSet = new Set(S.data.log[sel] || []);
+      list = `<div class="habits">${habits.map(h => {
+        const isDone = logSet.has(h.id);
+        const dots = Array.from({ length: 7 }, (_, i) => keyOf(addDays(selDate, i - 6)))
+          .map(k => `<i class="${(S.data.log[k] || []).includes(h.id) ? "on" : ""}"></i>`).join("");
+        if (S.editing) {
+          return `<div class="habit"><span class="name">${esc(h.name)}</span><button class="del" data-act="del:${esc(h.id)}">${S.confirmDel === h.id ? "Tap to remove" : "Remove"}</button></div>`;
+        }
+        return `<button class="habit ${isDone ? "done" : ""}" data-act="toggle:${esc(h.id)}" aria-pressed="${isDone}">
+          <span class="box">${ICON.check}</span><span class="name">${esc(h.name)}</span><span class="dots" aria-hidden="true">${dots}</span></button>`;
+      }).join("")}</div>`;
+    }
+
+    return `
+      <div class="week">${week}</div>
+      <section class="card">
+        <div class="card-h">
+          <div><div class="eyebrow">${esc(dayLabel)}</div>
+          <h2 style="margin-top:2px">${total ? `${done} of ${total} done` : "No habits yet"}</h2></div>
+          ${habits.length ? `<button class="ghost-btn" data-act="edit">${S.editing ? "Done" : "Edit"}</button>` : ""}
+        </div>
+        ${total ? `<div class="bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>` : ""}
+        ${list}
+        <form class="add-row" id="habitForm" autocomplete="off"><input id="habitInput" maxlength="60" placeholder="Add a daily habit" enterkeyhint="done" aria-label="New habit name"><button class="pill-btn" type="submit">Add</button></form>
+      </section>
+      <section class="stats">
+        <div class="stat"><b>${streak()}</b><small>day streak</small></div>
+        <div class="stat"><b>${bestStreak()}</b><small>best streak</small></div>
+        <div class="stat"><b>${rate(30)}%</b><small>last 30 days</small></div>
+      </section>
+      <section class="card">
+        <div class="card-h"><h2>Consistency</h2><span class="muted" style="font-size:13px">last 18 weeks</span></div>
+        ${heatmap()}
+      </section>`;
+  }
+
+  // ----- Heatmap -----
+  function heatmap() {
+    const W = 18, t = today(), n = S.data.habits.length;
+    const start = addDays(t, -t.getDay() - (W - 1) * 7);
+    let months = `<span></span>`, lastM = -1;
+    for (let w = 0; w < W; w++) {
+      const d = addDays(start, w * 7), m = d.getMonth();
+      if (m !== lastM && (w > 0 || d.getDate() <= 7)) { months += `<span style="grid-column:${w + 2} / span 3">${MON[m]}</span>`; }
+      lastM = m;
+    }
+    const lbls = ["", "M", "", "W", "", "F", ""].map(l => `<span class="lbl">${l}</span>`).join("");
+    let cells = "";
+    for (let i = 0; i < W * 7; i++) {
+      const d = addDays(start, i), k = keyOf(d);
+      if (d > t) { cells += `<span class="cell future"></span>`; continue; }
+      const c = dayCount(k), f = c ? c / Math.max(n, c, 1) : 0;
+      const o = f === 0 ? 0 : [0.3, 0.5, 0.75, 1][Math.min(3, Math.ceil(f * 4) - 1)];
+      cells += `<span class="cell ${k === keyOf(t) ? "today" : ""}" style="--o:${o}" title="${d.getDate()} ${MON[d.getMonth()]}: ${c} done"></span>`;
+    }
+    const legend = [0, .3, .5, .75, 1].map(o => `<span class="cell" style="--o:${o}"></span>`).join("");
+    return `<div class="heat-wrap" style="--weeks:${W}">
+      <div class="heat-months">${months}</div>
+      <div class="heat">${lbls}${cells}</div>
+      <div class="legend">Less ${legend} More</div></div>`;
+  }
+
+  // ----- Board -----
+  function boardView() {
+    const wk = period("w", 0), mo = period("m", 0);
+    const g = key => { const gs = goalsFor(key); return gs.length ? `<span class="tag">${key[0] === "w" ? "Week" : "Month"} goals <b>${gs.filter(x => x.done).length}/${gs.length}</b></span>` : ""; };
+    const tags = g(wk.key) + g(mo.key);
+    return `
+      <section class="card">
+        <div class="card-h"><h2>Tasks per day</h2>
+          <div class="seg" role="group" aria-label="Range">${[7, 30, 90].map(r => `<button data-act="range:${r}" aria-pressed="${S.range === r}">${r}d</button>`).join("")}</div></div>
+        <div class="readout" id="readout"></div>
+        <div id="chart"></div>
+      </section>
+      <section class="stats">
+        <div class="stat"><b>${streak()}</b><small>day streak</small></div>
+        <div class="stat"><b>${rate(7)}%</b><small>this week</small></div>
+        <div class="stat"><b>${rate(90)}%</b><small>90 days</small></div>
+      </section>
+      ${tags ? `<div class="goal-line">${tags}</div>` : ""}`;
+  }
+
+  function drawChart() {
+    const box = document.getElementById("chart"); if (!box) return;
+    const R = S.range, W = Math.max(280, box.clientWidth || 340), H = 190;
+    const L = 26, Rp = 10, T = 10, B = 24;
+    const days = Array.from({ length: R }, (_, i) => addDays(today(), i - R + 1));
+    const vals = days.map(d => dayCount(keyOf(d)));
+    const max = Math.max(1, ...vals);
+    const step = max <= 5 ? 1 : max <= 10 ? 2 : Math.ceil(max / 5);
+    const yMax = Math.ceil(max / step) * step;
+    const x = i => L + (R === 1 ? 0 : i * (W - L - Rp) / (R - 1));
+    const y = v => T + (H - T - B) * (1 - v / yMax);
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Tasks completed per day, last ${R} days">`;
+    for (let v = 0; v <= yMax; v += step) {
+      s += `<line x1="${L}" x2="${W - Rp}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1" ${v ? 'stroke-dasharray="2 4"' : ""}/>`;
+      s += `<text x="${L - 8}" y="${y(v) + 3.5}" text-anchor="end">${v}</text>`;
+    }
+    const ticks = R === 7 ? days.map((_, i) => i) : [0, Math.round((R - 1) / 3), Math.round(2 * (R - 1) / 3), R - 1];
+    ticks.forEach(i => {
+      const d = days[i], lab = R === 7 ? DOW[d.getDay()].slice(0, 1) : d.getDate() + " " + MON[d.getMonth()];
+      const anchor = R === 7 ? "middle" : i === 0 ? "start" : i === R - 1 ? "end" : "middle";
+      s += `<text x="${x(i)}" y="${H - 6}" text-anchor="${anchor}">${lab}</text>`;
+    });
+    const hi = S.hover == null ? R - 1 : S.hover;
+    s += `<line x1="${x(hi)}" x2="${x(hi)}" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-width="1" opacity=".5"/>`;
+    const c = "var(--fg)";
+    const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
+    s += `<path d="M${pts.join("L")}L${x(R - 1)},${y(0)}L${x(0)},${y(0)}Z" fill="${c}" opacity=".1"/>`;
+    s += `<path d="M${pts.join("L")}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (R === 7) vals.forEach((v, i) => s += `<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${c}"/>`);
+    s += `<circle cx="${x(hi)}" cy="${y(vals[hi])}" r="5" fill="${c}" stroke="var(--surface)" stroke-width="2"/>`;
+    s += `</svg>`;
+    box.innerHTML = s;
+
+    const d = days[hi];
+    document.getElementById("readout").innerHTML =
+      `<span class="d">${hi === R - 1 ? "Today" : DOW[d.getDay()] + " " + d.getDate() + " " + MON[d.getMonth()]}</span><span><b>${vals[hi]}</b> done</span>`;
+
+    const svg = box.querySelector("svg");
+    const pick = e => {
+      const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * (W / r.width);
+      const i = Math.round((px - L) / ((W - L - Rp) / Math.max(1, R - 1)));
+      const ni = Math.max(0, Math.min(R - 1, i));
+      if (ni !== S.hover) { S.hover = ni; drawChart(); }
+    };
+    svg.addEventListener("pointerdown", pick);
+    svg.addEventListener("pointermove", e => { if (e.buttons || e.pointerType === "mouse") pick(e); });
+  }
+
+  // ----- Goals -----
+  function goalsView() {
+    const per = period(S.gScope, S.gOffset), gs = goalsFor(per.key);
+    const doneN = gs.filter(g => g.done).length;
+    let left = "";
+    if (S.gOffset === 0) {
+      const days = Math.round((per.end - today()) / 864e5) + 1;
+      left = days === 1 ? "Last day" : days + " days left";
+    }
+    const list = gs.length
+      ? `<div class="habits">${gs.map(g => `<div class="goal">
+          <button class="habit ${g.done ? "done" : ""}" data-act="gtoggle:${esc(g.id)}" aria-pressed="${!!g.done}">
+            <span class="box">${ICON.check}</span><span class="name">${esc(g.text)}</span></button>
+          ${S.editing ? `<button class="del" data-act="gdel:${esc(g.id)}">${S.confirmDel === g.id ? "Tap to remove" : "Remove"}</button>` : ""}</div>`).join("")}</div>`
+      : `<div class="empty"><b>No ${SCOPES[S.gScope].toLowerCase()} objectives yet</b><span>Add what you want to have done by the end of ${S.gScope === "w" ? "this week" : S.gScope === "m" ? "this month" : S.gScope === "q" ? "this quarter" : "this year"}.</span></div>`;
+
+    return `
+      <div class="seg wide" role="group" aria-label="Goal period">${Object.entries(SCOPES).map(([k, l]) => `<button data-act="gscope:${k}" aria-pressed="${S.gScope === k}">${l}</button>`).join("")}</div>
+      <section class="card">
+        <div class="pnav">
+          <button class="arrow" data-act="gprev" aria-label="Previous period">${ICON.left}</button>
+          <div class="mid"><b>${esc(per.label)}</b><small>${esc([per.sub, left].filter(Boolean).join(" · "))}</small></div>
+          <button class="arrow" data-act="gnext" aria-label="Next period">${ICON.right}</button>
+        </div>
+        ${gs.length ? `<div class="card-h"><span class="muted">${doneN} of ${gs.length} complete</span><button class="ghost-btn" data-act="edit">${S.editing ? "Done" : "Edit"}</button></div>
+        <div class="bar"><i style="width:${Math.round(100 * doneN / gs.length)}%"></i></div>` : ""}
+        ${list}
+        <form class="add-row" id="goalForm" autocomplete="off"><input id="goalInput" maxlength="120" placeholder="Add a ${SCOPES[S.gScope].toLowerCase()} objective" enterkeyhint="done" aria-label="New objective"><button class="pill-btn" type="submit">Add</button></form>
+      </section>`;
+  }
+
+  // ---------- actions ----------
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-act]"); if (!b) return;
+    const [act, ...rest] = b.dataset.act.split(":"); const arg = rest.join(":");
+    if (act !== "del" && act !== "gdel") S.confirmDel = null;
+    switch (act) {
+      case "tab": S.tab = arg; S.editing = false; S.hover = null; store.set("tab", arg); window.scrollTo(0, 0); break;
+      case "day": S.day = arg; break;
+      case "edit": S.editing = !S.editing; break;
+      case "theme": {
+        const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+        document.documentElement.dataset.theme = next; store.set("theme", next); syncThemeColor(); break;
+      }
+      case "range": S.range = +arg; S.hover = null; break;
+      case "gscope": S.gScope = arg; S.gOffset = 0; S.editing = false; break;
+      case "gprev": S.gOffset--; break;
+      case "gnext": S.gOffset++; break;
+      case "toggle": {
+        const log = S.data.log, arr = log[S.day] || [];
+        log[S.day] = arr.includes(arg) ? arr.filter(x => x !== arg) : [...arr, arg];
+        if (!log[S.day].length) delete log[S.day];
+        commit(); return;
+      }
+      case "suggest": addHabit(arg); return;
+      case "del": {
+        if (S.confirmDel !== arg) { S.confirmDel = arg; break; }
+        S.data.habits = S.data.habits.filter(h => h.id !== arg); S.confirmDel = null;
+        if (!S.data.habits.length) S.editing = false;
+        commit(); return;
+      }
+      case "gtoggle": {
+        const g = goalsFor(period(S.gScope, S.gOffset).key).find(x => x.id === arg);
+        if (g) { g.done = !g.done; commit(); } return;
+      }
+      case "gdel": {
+        if (S.confirmDel !== arg) { S.confirmDel = arg; break; }
+        const key = period(S.gScope, S.gOffset).key;
+        S.data.goals[key] = goalsFor(key).filter(x => x.id !== arg);
+        if (!S.data.goals[key].length) { delete S.data.goals[key]; S.editing = false; }
+        S.confirmDel = null; commit(); return;
+      }
+    }
+    render();
+  });
+
+  function addHabit(name) {
+    name = (name || "").trim().slice(0, 60);
+    if (!name) return;
+    if (S.data.habits.some(h => h.name.toLowerCase() === name.toLowerCase())) return;
+    S.data.habits.push({ id: uid(), name, created: keyOf(today()) });
+    commit();
+  }
+
+  document.addEventListener("submit", e => {
+    e.preventDefault();
+    if (e.target.id === "habitForm") {
+      const i = document.getElementById("habitInput"); const v = i.value; i.value = ""; addHabit(v);
+    } else if (e.target.id === "goalForm") {
+      const i = document.getElementById("goalInput"); const v = (i.value || "").trim().slice(0, 120); i.value = "";
+      if (!v) return;
+      const key = period(S.gScope, S.gOffset).key;
+      (S.data.goals[key] = S.data.goals[key] || []).push({ id: uid(), text: v, done: false });
+      commit();
+    }
+  });
+
+  function syncThemeColor() {
+    const m = document.querySelector('meta[name="theme-color"]');
+    if (m) m.content = document.documentElement.dataset.theme === "light" ? "#ece6da" : "#242422";
+  }
+
+  let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => S.tab === "board" && drawChart(), 120); });
+  // other tabs/windows of the app keep in step; a new day re-renders on return
+  addEventListener("storage", e => { if (e.key === DATA_KEY) { S.data = load(); render(); } });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { S.data = load(); render(); } });
+
+  syncThemeColor();
+  render();
+})();
+</script>
+</body>
+</html>
