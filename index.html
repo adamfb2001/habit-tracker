@@ -174,6 +174,8 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 
 /* Mini 10-day line chart */
 .mini-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.mini-h .link { color: var(--fg); font-size: 14px; font-weight: 600; min-height: 36px; padding: 0 4px; text-decoration: underline; text-underline-offset: 3px; }
+.mini-h:has(.link) { align-items: center; }
 .line svg { display: block; width: 100%; height: auto; overflow: visible; }
 .line text { font: 600 10px var(--font-body); fill: var(--muted); font-variant-numeric: tabular-nums; }
 .line text.on { fill: var(--fg); }
@@ -210,6 +212,22 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 .tag b { color: var(--fg); font-weight: 600; }
 
 /* Goals */
+.govs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.gov { background: var(--surface); border-radius: var(--radius); padding: 10px 10px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; border: 1.5px solid transparent; }
+.gov small { font-size: 12px; color: var(--muted); font-weight: 600; }
+.gov b { font: 600 18px/1.2 var(--font-display); font-variant-numeric: tabular-nums; }
+.gov .bar { width: 100%; height: 5px; }
+.gov[aria-pressed="true"] { border-color: var(--fg); }
+.gtitle { font: 600 19px/1.25 var(--font-display); margin: -6px 0 0; overflow-wrap: anywhere; }
+.mslist { display: flex; flex-direction: column; }
+.gform { display: flex; flex-direction: column; gap: 8px; }
+.gform input { min-height: 46px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); font-size: 16px; width: 100%; min-width: 0; }
+.gform input::placeholder { color: var(--muted); }
+.gform input[aria-invalid="true"] { border-color: var(--fg); border-width: 2px; }
+.ms-in { display: flex; align-items: center; gap: 10px; }
+.ms-in span { width: 22px; flex: none; text-align: center; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+.gform-actions { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.gform-actions .pill-btn { min-height: 42px; padding: 0 18px; }
 .pnav { display: flex; align-items: center; gap: 10px; }
 .pnav .arrow { width: 40px; height: 40px; border-radius: 8px; background: var(--surface-2); display: grid; place-items: center; flex: none; }
 .pnav .mid { flex: 1; text-align: center; min-width: 0; }
@@ -250,7 +268,8 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
   const MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   const MONTH = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   const DOW = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-  const SCOPES = { w: "Weekly", m: "Monthly", q: "Quarterly", y: "Yearly" };
+  const SCOPES = { w: "Weekly", m: "Monthly", y: "Yearly" };
+  const SCOPE_NOW = { w: "This week", m: "This month", y: "This year" };
 
   const ICON = {
     check: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3.5 8.5l3 3 6-7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -290,7 +309,28 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
       if (ids.length) log[keyOf(d)] = ids;
     }
     log[keyOf(t)] = ["s1", "s2"];
-    return { v: 1, sample: true, habits: habits.map(({ id, name }) => ({ id, name })), log, goals: {} };
+    return { v: 1, sample: true, habits: habits.map(({ id, name }) => ({ id, name })), log, goals: sampleGoals() };
+  }
+
+  function sampleGoals() {
+    const g = (title, ms) => ({ title, ms: ms.map(([text, done]) => ({ text, done })) });
+    return {
+      [period("w", 0).key]: g("Get back into running", [["Run 3 km on Monday", true], ["Run 4 km midweek", true], ["Run 5 km at the weekend", false]]),
+      [period("m", 0).key]: g("Read two books", [["Finish the first book", true], ["Start the second book", false], ["Finish the second book", false]]),
+      [period("y", 0).key]: g("Run a half marathon", [["Sign up for a race", true], ["Run 15 km in training", false], ["Finish the half marathon", false]])
+    };
+  }
+
+  // one goal per period, each with exactly 3 milestones; older saves kept a list of objectives
+  function normGoal(v) {
+    if (!v) return null;
+    if (Array.isArray(v)) {
+      if (!v.length) return null;
+      v = { title: v[0].text || "", ms: v.slice(1, 4).map(x => ({ text: x.text || "", done: !!x.done })) };
+    }
+    const ms = (Array.isArray(v.ms) ? v.ms : []).slice(0, 3).map(x => ({ text: String(x.text || ""), done: !!x.done }));
+    while (ms.length < 3) ms.push({ text: "", done: false });
+    return { title: String(v.title || ""), ms };
   }
 
   function load() {
@@ -302,6 +342,8 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     d.habits = Array.isArray(d.habits) ? d.habits : [];
     d.log = d.log && typeof d.log === "object" ? d.log : {};
     d.goals = d.goals && typeof d.goals === "object" ? d.goals : {};
+    for (const k of Object.keys(d.goals)) { const g = normGoal(d.goals[k]); if (g) d.goals[k] = g; else delete d.goals[k]; }
+    if (d.sample && !Object.keys(d.goals).length) { d.goals = sampleGoals(); store.set(DATA_KEY, JSON.stringify(d)); }
     return d;
   }
 
@@ -312,7 +354,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     day: keyOf(today()),
     editing: false, confirmDel: null, adding: false,
     range: 30, hover: null,
-    gScope: "w", gOffset: 0,
+    gScope: "w", gOffset: 0, gEdit: false,
     saveErr: false
   };
 
@@ -359,7 +401,8 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     const y = t.getFullYear() + offset;
     return { key: "y:" + y, label: String(y), sub: offset === 0 ? "This year" : "", end: new Date(y, 11, 31) };
   }
-  const goalsFor = key => S.data.goals[key] || [];
+  const goalAt = key => S.data.goals[key] || null;
+  const msDone = g => g ? g.ms.filter(m => m.done).length : 0;
 
   // ---------- saving (on this device) ----------
   function commit() {
@@ -500,8 +543,8 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
   // ----- Board -----
   function boardView() {
     const wk = period("w", 0), mo = period("m", 0);
-    const g = key => { const gs = goalsFor(key); return gs.length ? `<span class="tag">${key[0] === "w" ? "Week" : "Month"} goals <b>${gs.filter(x => x.done).length}/${gs.length}</b></span>` : ""; };
-    const tags = g(wk.key) + g(mo.key);
+    const g = (key, l) => { const gl = goalAt(key); return gl ? `<span class="tag">${l} goal <b>${msDone(gl)}/3</b></span>` : ""; };
+    const tags = g(wk.key, "Week") + g(mo.key, "Month") + g(period("y", 0).key, "Year");
     return `
       <section class="card">
         <div class="card-h"><h2>Tasks per day</h2>
@@ -566,33 +609,57 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
   }
 
   // ----- Goals -----
+  // Weekly / monthly / yearly: one goal per period, each broken into 3 milestones to tick off
   function goalsView() {
-    const per = period(S.gScope, S.gOffset), gs = goalsFor(per.key);
-    const doneN = gs.filter(g => g.done).length;
+    const per = period(S.gScope, S.gOffset), g = goalAt(per.key);
     let left = "";
     if (S.gOffset === 0) {
       const days = Math.round((per.end - today()) / 864e5) + 1;
       left = days === 1 ? "Last day" : days + " days left";
     }
-    const list = gs.length
-      ? `<div class="habits">${gs.map(g => `<div class="goal">
-          <button class="habit ${g.done ? "done" : ""}" data-act="gtoggle:${esc(g.id)}" aria-pressed="${!!g.done}">
-            <span class="box">${ICON.check}</span><span class="name">${esc(g.text)}</span></button>
-          ${S.editing ? `<button class="del" data-act="gdel:${esc(g.id)}">${S.confirmDel === g.id ? "Tap to remove" : "Remove"}</button>` : ""}</div>`).join("")}</div>`
-      : `<div class="empty"><b>No ${SCOPES[S.gScope].toLowerCase()} objectives yet</b><span>Add what you want to have done by the end of ${S.gScope === "w" ? "this week" : S.gScope === "m" ? "this month" : S.gScope === "q" ? "this quarter" : "this year"}.</span></div>`;
+
+    // overview of the current week, month and year; tap one to open it
+    const overview = Object.keys(SCOPES).map(sc => {
+      const og = goalAt(period(sc, 0).key), n = msDone(og);
+      return `<button class="gov" data-act="gscope:${sc}" aria-pressed="${S.gScope === sc}">
+        <small>${SCOPES[sc]}</small><b>${og ? n + "/3" : "–"}</b>
+        <span class="bar"><i style="width:${og ? Math.round(100 * n / 3) : 0}%"></i></span></button>`;
+    }).join("");
+
+    const sfx = per.key.replace(/[^a-z0-9]/gi, "_");
+    let content;
+    if (S.gEdit || !g) {
+      const fresh = !g;
+      content = `<form class="gform" id="goalForm" autocomplete="off" data-key="${esc(per.key)}">
+        <label class="eyebrow" for="gT_${sfx}">${SCOPES[S.gScope]} goal</label>
+        <input id="gT_${sfx}" maxlength="80" placeholder="What do you want to achieve?" value="${esc(g ? g.title : "")}">
+        <span class="eyebrow" style="margin-top:6px">3 milestones</span>
+        ${[0, 1, 2].map(i => `<div class="ms-in"><span>${i + 1}</span><input id="gM${i}_${sfx}" maxlength="80" placeholder="Milestone ${i + 1}" aria-label="Milestone ${i + 1}" value="${esc(g ? g.ms[i].text : "")}"></div>`).join("")}
+        <div class="gform-actions">
+          ${fresh ? "" : `<button type="button" class="del" data-act="gremove">${S.confirmDel === "__goal" ? "Tap again to remove" : "Remove goal"}</button>`}
+          <span style="flex:1"></span>
+          ${fresh ? "" : `<button type="button" class="ghost-btn" data-act="gcancel">Cancel</button>`}
+          <button type="submit" class="pill-btn">${fresh ? "Set goal" : "Save"}</button>
+        </div>
+      </form>`;
+    } else {
+      const n = msDone(g);
+      content = `<div class="mini-h"><span class="eyebrow">${n === 3 ? "Goal complete" : n + " of 3 milestones"}</span><button class="link" data-act="gedit">Edit</button></div>
+        <h2 class="gtitle">${esc(g.title || "Untitled goal")}</h2>
+        <div class="bar"><i style="width:${Math.round(100 * n / 3)}%"></i></div>
+        <div class="mslist">${g.ms.map((m, i) => `<button class="item ${m.done ? "done" : ""}" data-act="gms:${i}" aria-pressed="${m.done}">
+          <span class="box">${ICON.check}</span><span class="name">${esc(m.text || "Milestone " + (i + 1))}</span></button>`).join("")}</div>`;
+    }
 
     return `
-      <div class="seg wide" role="group" aria-label="Goal period">${Object.entries(SCOPES).map(([k, l]) => `<button data-act="gscope:${k}" aria-pressed="${S.gScope === k}">${l}</button>`).join("")}</div>
+      <div class="govs" role="group" aria-label="Goal period">${overview}</div>
       <section class="card">
         <div class="pnav">
           <button class="arrow" data-act="gprev" aria-label="Previous period">${ICON.left}</button>
           <div class="mid"><b>${esc(per.label)}</b><small>${esc([per.sub, left].filter(Boolean).join(" · "))}</small></div>
           <button class="arrow" data-act="gnext" aria-label="Next period">${ICON.right}</button>
         </div>
-        ${gs.length ? `<div class="card-h"><span class="muted">${doneN} of ${gs.length} complete</span><button class="ghost-btn" data-act="edit">${S.editing ? "Done" : "Edit"}</button></div>
-        <div class="bar"><i style="width:${Math.round(100 * doneN / gs.length)}%"></i></div>` : ""}
-        ${list}
-        <form class="add-row" id="goalForm" autocomplete="off"><input id="goalInput" maxlength="120" placeholder="Add a ${SCOPES[S.gScope].toLowerCase()} objective" enterkeyhint="done" aria-label="New objective"><button class="pill-btn" type="submit">Add</button></form>
+        ${content}
       </section>`;
   }
 
@@ -620,7 +687,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     if (held) { held = false; e.preventDefault(); return; }
     const b = e.target.closest("[data-act]"); if (!b) return;
     const [act, ...rest] = b.dataset.act.split(":"); const arg = rest.join(":");
-    if (act !== "del" && act !== "gdel" && act !== "clearsample") S.confirmDel = null;
+    if (act !== "del" && act !== "gremove" && act !== "clearsample") S.confirmDel = null;
     switch (act) {
       case "tab": S.tab = arg; S.editing = false; S.hover = null; store.set("tab", arg); window.scrollTo(0, 0); break;
       case "day": S.day = arg; break;
@@ -637,9 +704,19 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
         document.documentElement.dataset.theme = next; store.set("theme", next); syncThemeColor(); break;
       }
       case "range": S.range = +arg; S.hover = null; break;
-      case "gscope": S.gScope = arg; S.gOffset = 0; S.editing = false; break;
-      case "gprev": S.gOffset--; break;
-      case "gnext": S.gOffset++; break;
+      case "gscope": S.gScope = arg; S.gOffset = 0; S.gEdit = false; break;
+      case "gprev": S.gOffset--; S.gEdit = false; break;
+      case "gnext": S.gOffset++; S.gEdit = false; break;
+      case "gedit": S.gEdit = true; break;
+      case "gcancel": S.gEdit = false; break;
+      case "gms": {
+        const g = goalAt(period(S.gScope, S.gOffset).key);
+        if (g && g.ms[+arg]) { g.ms[+arg].done = !g.ms[+arg].done; commit(); } return;
+      }
+      case "gremove": {
+        if (S.confirmDel !== "__goal") { S.confirmDel = "__goal"; break; }
+        delete S.data.goals[period(S.gScope, S.gOffset).key]; S.confirmDel = null; S.gEdit = false; commit(); return;
+      }
       case "toggle": {
         const log = S.data.log, arr = log[S.day] || [];
         log[S.day] = arr.includes(arg) ? arr.filter(x => x !== arg) : [...arr, arg];
@@ -651,17 +728,6 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
         S.data.habits = S.data.habits.filter(h => h.id !== arg); S.confirmDel = null;
         if (!S.data.habits.length) S.editing = false;
         commit(); return;
-      }
-      case "gtoggle": {
-        const g = goalsFor(period(S.gScope, S.gOffset).key).find(x => x.id === arg);
-        if (g) { g.done = !g.done; commit(); } return;
-      }
-      case "gdel": {
-        if (S.confirmDel !== arg) { S.confirmDel = arg; break; }
-        const key = period(S.gScope, S.gOffset).key;
-        S.data.goals[key] = goalsFor(key).filter(x => x.id !== arg);
-        if (!S.data.goals[key].length) { delete S.data.goals[key]; S.editing = false; }
-        S.confirmDel = null; commit(); return;
       }
     }
     render();
@@ -680,11 +746,19 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     if (e.target.id === "habitForm") {
       const i = document.getElementById("habitInput"); const v = i.value; i.value = ""; addHabit(v);
     } else if (e.target.id === "goalForm") {
-      const i = document.getElementById("goalInput"); const v = (i.value || "").trim().slice(0, 120); i.value = "";
-      if (!v) return;
-      const key = period(S.gScope, S.gOffset).key;
-      (S.data.goals[key] = S.data.goals[key] || []).push({ id: uid(), text: v, done: false });
-      commit();
+      const key = e.target.dataset.key, sfx = key.replace(/[^a-z0-9]/gi, "_");
+      const inputs = [document.getElementById("gT_" + sfx), ...[0, 1, 2].map(i => document.getElementById(`gM${i}_${sfx}`))];
+      const empty = inputs.find(i => !i.value.trim());
+      if (empty) { empty.focus(); empty.setAttribute("aria-invalid", "true"); return; }
+      const old = goalAt(key);
+      S.data.goals[key] = {
+        title: inputs[0].value.trim().slice(0, 80),
+        ms: [1, 2, 3].map(i => {
+          const text = inputs[i].value.trim().slice(0, 80), prev = old && old.ms[i - 1];
+          return { text, done: !!(prev && prev.text === text && prev.done) };
+        })
+      };
+      S.gEdit = false; commit();
     }
   });
 
