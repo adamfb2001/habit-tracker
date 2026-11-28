@@ -8,7 +8,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Streaks">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#242422">
+<meta name="theme-color" content="#111110">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -29,7 +29,7 @@
    Surfaces and lines are mixes of bone and dark grey, never a new hue. Light/dark via [data-theme]. */
 :root {
   --bone: #ece6da;
-  --charcoal: #242422;
+  --charcoal: #111110;
   --grey: #7e7b73;
   --font-display: "Sora", "Inter", system-ui, -apple-system, sans-serif;
   --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -690,7 +690,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 
   function syncThemeColor() {
     const m = document.querySelector('meta[name="theme-color"]');
-    if (m) m.content = document.documentElement.dataset.theme === "light" ? "#ece6da" : "#242422";
+    if (m) m.content = document.documentElement.dataset.theme === "light" ? "#ece6da" : "#111110";
   }
 
   let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => S.tab === "board" && drawChart(), 120); });
