@@ -211,6 +211,30 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 .tag { font-size: 12px; padding: 4px 9px; border-radius: 999px; background: var(--surface-2); color: var(--muted); font-variant-numeric: tabular-nums; }
 .tag b { color: var(--fg); font-weight: 600; }
 
+/* Compare */
+.theme-btn[aria-pressed="true"] { background: var(--fg); color: var(--bg); }
+.cmp { gap: 10px; }
+.cmp-h { display: flex; align-items: center; gap: 14px; font-size: 13px; font-weight: 600; }
+.cmp-h .link, .mini-h .link { color: var(--fg); font-size: 14px; font-weight: 600; min-height: 36px; padding: 0 4px; text-decoration: underline; text-underline-offset: 3px; }
+.key { display: inline-flex; align-items: center; gap: 6px; }
+.key i { width: 16px; height: 3px; border-radius: 2px; display: block; background: var(--fg); }
+.key i.fr { background: repeating-linear-gradient(90deg, var(--muted) 0 5px, transparent 5px 8px); }
+.cmp p { margin: 0; font-size: 14px; }
+.cmp-t { font: 600 16px/1.3 var(--font-display); }
+.cmp-row { display: flex; gap: 8px; }
+.cmp-row input, .share-url { flex: 1; min-width: 0; min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); font-size: 16px; }
+.cmp-row input::placeholder { color: var(--muted); }
+.cmp-row .pill-btn, .cmp-row .ghost-btn { min-height: 44px; flex: none; }
+.cmp .del { align-self: flex-start; }
+.flash { font-weight: 600; }
+.stat em, .gov em { display: block; font-style: normal; font-size: 12px; color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.mini-h b.hi { color: var(--fg); font-weight: 600; }
+.who { font-size: 12px; font-weight: 600; color: var(--muted); align-self: center; min-width: 34px; }
+.heat-wrap.fr .cell::after { background: var(--muted); }
+.heat-wrap.fr .cell.today { box-shadow: 0 0 0 1.5px var(--muted); }
+.fr-goal .bar > i { background: var(--muted); }
+.fr-goal .item.done .box { background: var(--muted); border-color: var(--muted); }
+
 /* Goals */
 .govs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .gov { background: var(--surface); border-radius: var(--radius); padding: 10px 10px 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; border: 1.5px solid transparent; }
@@ -279,6 +303,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     left: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 4L6 9l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
     sun: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="3.6" fill="currentColor"/><path d="M10 1.8v2.2M10 16v2.2M1.8 10H4M16 10h2.2M4.2 4.2l1.6 1.6M14.2 14.2l1.6 1.6M4.2 15.8l1.6-1.6M14.2 5.8l1.6-1.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     moon: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M16.5 12.4A7 7 0 017.6 3.5a7 7 0 108.9 8.9z" fill="currentColor"/></svg>',
+    compare: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="7" cy="6.5" r="3" fill="currentColor"/><path d="M1.5 16.5c.6-3 2.8-4.6 5.5-4.6s4.9 1.6 5.5 4.6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14" cy="6" r="2.4" stroke="currentColor" stroke-width="1.6"/><path d="M14.6 10.6c2 .3 3.3 1.7 3.9 4.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
     plus: '<svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
     close: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
     right: '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M7 4l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
@@ -355,6 +380,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     editing: false, confirmDel: null, adding: false,
     range: 30, hover: null,
     gScope: "w", gOffset: 0, gEdit: false,
+    compare: store.get("compare") === "1", cmpPanel: false, cmpErr: false, shareUrl: "", flash: "",
     saveErr: false
   };
 
@@ -404,6 +430,90 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
   const goalAt = key => S.data.goals[key] || null;
   const msDone = g => g ? g.ms.filter(m => m.done).length : 0;
 
+  // ---------- friend comparison ----------
+  // A friend's progress arrives as a link they share from their own copy of the app. The link holds a
+  // small snapshot (tasks done per day, their goals); nothing is uploaded anywhere.
+  const FRIEND_KEY = "dailyStreaks.friend", SHARE_DAYS = 200;
+  const b64e = str => btoa(String.fromCharCode(...new TextEncoder().encode(str))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  const b64d = str => { str = str.replace(/-/g, "+").replace(/_/g, "/"); while (str.length % 4) str += "="; return new TextDecoder().decode(Uint8Array.from(atob(str), c => c.charCodeAt(0))); };
+  const fmtDay = k => { const d = new Date(k + "T00:00:00"); return d.getDate() + " " + MON[d.getMonth()]; };
+
+  function shareCode(name) {
+    const t = today(); let c = "";
+    for (let i = 0; i < SHARE_DAYS; i++) c += Math.min(35, doneOn(keyOf(addDays(t, -i)))).toString(36);
+    const g = {};
+    for (const sc of Object.keys(SCOPES)) for (let o = -2; o <= 1; o++) {
+      const k = period(sc, o).key, gl = goalAt(k);
+      if (gl) g[k] = [gl.title, ...gl.ms.map(m => m.text), gl.ms.map(m => m.done ? 1 : 0).join("")];
+    }
+    return b64e(JSON.stringify({ v: 1, n: name, a: keyOf(t), t: S.data.habits.length, c: c.replace(/0+$/, ""), g }));
+  }
+  function parseFriend(input) {
+    try {
+      const str = String(input || "").trim();
+      const m = str.match(/#f=([A-Za-z0-9_-]+)/) || str.match(/^([A-Za-z0-9_-]{8,})$/);
+      if (!m) return null;
+      const p = JSON.parse(b64d(m[1]));
+      if (!p || p.v !== 1 || typeof p.c !== "string" || !/^\d{4}-\d\d-\d\d$/.test(p.a)) return null;
+      const anchor = new Date(p.a + "T00:00:00"), log = {};
+      [...p.c].forEach((ch, i) => { const n = parseInt(ch, 36); if (n) log[keyOf(addDays(anchor, -i))] = n; });
+      const goals = {};
+      Object.entries(p.g || {}).forEach(([k, a]) => {
+        if (Array.isArray(a) && a.length >= 5) goals[k] = { title: String(a[0]), ms: [1, 2, 3].map(i => ({ text: String(a[i]), done: String(a[4])[i - 1] === "1" })) };
+      });
+      return { name: String(p.n || "Friend").slice(0, 30), asOf: p.a, total: Math.max(0, +p.t || 0), log, goals };
+    } catch { return null; }
+  }
+  function sampleFriend() {
+    let seed = 99; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const t = today(), log = {};
+    for (let i = 0; i < SHARE_DAYS; i++) {
+      const d = addDays(t, -i), weekend = d.getDay() % 6 === 0;
+      let n = 0; for (let h = 0; h < 4; h++) if (rnd() < (weekend ? .75 : .55)) n++;
+      if (i === 0) n = 3;
+      if (n) log[keyOf(d)] = n;
+    }
+    const g = (title, ms, done) => ({ title, ms: ms.map((text, i) => ({ text, done: done[i] })) });
+    return { name: "Sam", sample: true, asOf: keyOf(t), total: 4, log, goals: {
+      [period("w", 0).key]: g("Sleep before midnight", ["In bed by 12, Mon–Tue", "In bed by 12, Wed–Thu", "Keep it up at the weekend"], [true, false, false]),
+      [period("m", 0).key]: g("Cook at home more", ["Plan a weekly menu", "Cook 10 dinners", "Cook 20 dinners"], [true, true, false]),
+      [period("y", 0).key]: g("Learn to swim properly", ["Book lessons", "Swim 25 m non-stop", "Swim 1 km"], [true, true, false])
+    } };
+  }
+  function loadFriend() { try { const f = JSON.parse(store.get(FRIEND_KEY)); if (f && f.log && f.asOf) return f; } catch {} return null; }
+  function saveFriend(f) { friendCache = f; store.set(FRIEND_KEY, f ? JSON.stringify(f) : ""); }
+  let friendCache = loadFriend(), sampleFriendCache = null;
+  const friend = () => friendCache || (S.data.sample ? (sampleFriendCache = sampleFriendCache || sampleFriend()) : null);
+  const cmpOn = () => S.compare && !!friend();
+  const fName = () => friend().name;
+  const fCount = k => { const f = friend(); return k > f.asOf ? null : (f.log[k] || 0); };  // null = after their snapshot
+  const pctOf = (c, n) => c == null ? null : n ? Math.round(100 * Math.min(1, c / n)) : 0;
+  function fStreak() {
+    const f = friend(); let d = new Date(f.asOf + "T00:00:00"), n = 0;
+    if (!f.log[keyOf(d)]) d = addDays(d, -1);
+    while (f.log[keyOf(d)]) { n++; d = addDays(d, -1); }
+    return n;
+  }
+  function fBest() {
+    const ks = Object.keys(friend().log).sort(); let b = 0, r = 0, p = null;
+    for (const k of ks) { r = p && keyOf(addDays(p, 1)) === k ? r + 1 : 1; b = Math.max(b, r); p = new Date(k + "T00:00:00"); }
+    return b;
+  }
+  function fRate(days) {
+    const f = friend(); if (!f.total) return 0;
+    const a = new Date(f.asOf + "T00:00:00"); let sum = 0;
+    for (let i = 0; i < days; i++) sum += Math.min(f.total, f.log[keyOf(addDays(a, -i))] || 0);
+    return Math.round(100 * sum / (f.total * days));
+  }
+  const vs = v => cmpOn() ? `<em>${esc(fName())} ${v}</em>` : "";
+
+  // opened from a friend's share link: keep their snapshot and switch compare on
+  if (location.hash.startsWith("#f=")) {
+    const f = parseFriend(location.hash);
+    try { history.replaceState(null, "", location.pathname + location.search); } catch {}
+    if (f) { saveFriend(f); S.compare = true; store.set("compare", "1"); S.flash = `Added ${f.name}'s progress`; }
+  }
+
   // ---------- saving (on this device) ----------
   function commit() {
     S.data.updated = new Date().toISOString();
@@ -434,14 +544,35 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     const title = S.tab === "today" ? `Today<span>, ${t.getDate()} ${MON[t.getMonth()]}</span>` : S.tab === "board" ? "Board" : "Goals";
     const dark = document.documentElement.dataset.theme !== "light";
     const themeBtn = `<button class="theme-btn" data-act="theme" aria-label="Switch to ${dark ? "light" : "dark"} theme">${dark ? ICON.sun : ICON.moon}</button>`;
-    return `<header class="top"><h1>${title}</h1>${themeBtn}</header>`;
+    const cmpBtn = `<button class="theme-btn" data-act="compare" aria-pressed="${S.compare}" aria-label="Compare with a friend">${ICON.compare}</button>`;
+    return `<header class="top"><h1>${title}</h1>${cmpBtn}${themeBtn}</header>`;
   }
 
   function body() {
     const n = S.saveErr ? `<div class="notice"><b>Couldn't save</b><span class="muted">This browser isn't letting the page store data. If you're in private browsing, open it in a normal tab.</span></div>` : "";
-    if (S.tab === "board") return n + boardView();
-    if (S.tab === "goals") return n + goalsView();
-    return n + todayView();
+    const c = comparePanel();
+    if (S.tab === "board") return n + c + boardView();
+    if (S.tab === "goals") return n + c + goalsView();
+    return n + c + todayView();
+  }
+
+  function comparePanel() {
+    if (!S.compare) return "";
+    const f = friend(), real = !!friendCache, open = S.cmpPanel || !f;
+    const flash = S.flash ? `<small class="flash">${esc(S.flash)}</small>` : "";
+    const head = f ? `<div class="cmp-h"><span class="key"><i></i>You</span><span class="key"><i class="fr"></i>${esc(f.name)}${f.sample ? " (sample)" : ""}</span>
+      <span style="flex:1"></span><button class="link" data-act="cmppanel">${open ? "Close" : real ? "Update" : "Add friend"}</button></div>` : "";
+    if (!open) return `<section class="card cmp">${head}${real ? `<small class="muted">${esc(f.name)}'s progress as of ${fmtDay(f.asOf)}</small>` : ""}${flash}</section>`;
+    return `<section class="card cmp">${head}
+      ${f ? "" : `<b class="cmp-t">Compare with a friend</b>`}
+      <p class="muted">Share a link to your progress with your friend and ask them to share theirs from their app. Each link is a snapshot, so swap new ones to stay up to date.</p>
+      <form class="cmp-row" id="shareForm" autocomplete="off"><input id="myName" maxlength="30" placeholder="Your name" aria-label="Your name" value="${esc(store.get("myName") || "")}"><button class="pill-btn" type="submit">Share my progress</button></form>
+      ${S.shareUrl ? `<input class="share-url" id="shareUrl" readonly aria-label="Your share link" value="${esc(S.shareUrl)}">` : ""}
+      <form class="cmp-row" id="friendForm" autocomplete="off"><input id="friendLink" placeholder="Paste your friend's link" aria-label="Your friend's link"><button class="ghost-btn" type="submit">Add</button></form>
+      ${S.cmpErr ? `<small>That link doesn't look right. Copy the whole link and try again.</small>` : ""}
+      ${flash}
+      ${real ? `<button class="del" data-act="cmpremove">${S.confirmDel === "__friend" ? "Tap again to remove" : "Remove " + esc(f.name)}</button>` : ""}
+    </section>`;
   }
 
   // ----- Today -----
@@ -455,22 +586,29 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 
     // last 10 days as a line chart, one point per day; tap a day to see its checklist
     const days10 = Array.from({ length: 10 }, (_, i) => addDays(t, i - 9));
-    const vals = days10.map(d => doneOn(keyOf(d)));
+    const cmp = cmpOn();
+    const vals = days10.map(d => cmp ? pctOf(doneOn(keyOf(d)), total) : doneOn(keyOf(d)));
+    const fvals = cmp ? days10.map(d => pctOf(fCount(keyOf(d)), friend().total)) : [];
     const VW = 320, VH = 124, PL = 12, PR = 12, PT = 20, PB = 22;
-    const yMax = Math.max(1, total, ...vals);
+    const yMax = cmp ? 100 : Math.max(1, total, ...vals);
     const px = i => PL + i * (VW - PL - PR) / 9, py = v => PT + (VH - PT - PB) * (1 - v / yMax);
     const pts = vals.map((v, i) => `${px(i).toFixed(1)},${py(v).toFixed(1)}`);
     let line = `<svg viewBox="0 0 ${VW} ${VH}" role="group" aria-label="Tasks completed, last 10 days">
       <line x1="${PL}" x2="${VW - PR}" y1="${py(yMax)}" y2="${py(yMax)}" stroke="var(--line)" stroke-dasharray="2 4"/>
       <line x1="${PL}" x2="${VW - PR}" y1="${py(0)}" y2="${py(0)}" stroke="var(--line)"/>
-      <path d="M${pts.join("L")}L${px(9)},${py(0)}L${px(0)},${py(0)}Z" fill="var(--fg)" opacity=".07"/>
-      <path d="M${pts.join("L")}" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      <path d="M${pts.join("L")}L${px(9)},${py(0)}L${px(0)},${py(0)}Z" fill="var(--fg)" opacity=".07"/>`;
+    if (cmp) {
+      const fp = fvals.map((v, i) => v == null ? null : `${px(i).toFixed(1)},${py(v).toFixed(1)}`).filter(Boolean);
+      if (fp.length) line += `<path d="M${fp.join("L")}" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>`;
+      fvals.forEach((v, i) => { if (v != null) line += `<circle cx="${px(i)}" cy="${py(v)}" r="${keyOf(days10[i]) === sel ? 4.5 : 3}" fill="var(--muted)" stroke="var(--surface)" stroke-width="1.5"/>`; });
+    }
+    line += `<path d="M${pts.join("L")}" fill="none" stroke="var(--fg)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     days10.forEach((d, i) => {
       const k = keyOf(d), on = k === sel, x = px(i), y = py(vals[i]);
       line += on
         ? `<circle cx="${x}" cy="${y}" r="6" fill="var(--fg)" stroke="var(--surface)" stroke-width="2.5"/>`
         : `<circle cx="${x}" cy="${y}" r="3.5" fill="var(--surface)" stroke="var(--fg)" stroke-width="2"/>`;
-      line += `<text x="${x}" y="${y - 10}" text-anchor="middle" class="${on ? "on" : ""}">${vals[i]}</text>`;
+      if (!cmp) line += `<text x="${x}" y="${y - 10}" text-anchor="middle" class="${on ? "on" : ""}">${vals[i]}</text>`;
       line += `<text x="${x}" y="${VH - 5}" text-anchor="middle" class="${on ? "on" : ""}">${d.getDate()}</text>`;
       line += `<rect class="hit" x="${x - (VW - PL - PR) / 18}" y="0" width="${(VW - PL - PR) / 9}" height="${VH}" data-act="day:${k}"><title>${DOW[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}: ${vals[i]} done</title></rect>`;
     });
@@ -496,7 +634,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
       <section class="card">
         <div class="mini-h">
           <div class="eyebrow">${esc(dayLabel)}</div>
-          <span class="muted" style="font-size:13px">${total ? `${done} of ${total} done` : "last 10 days"}</span>
+          <span class="muted" style="font-size:13px">${cmp ? (() => { const i = days10.findIndex(d => keyOf(d) === sel); return i < 0 ? "" : `You <b class="hi">${vals[i]}%</b> · ${esc(fName())} <b class="hi">${fvals[i] == null ? "–" : fvals[i] + "%"}</b>`; })() : total ? `${done} of ${total} done` : "last 10 days"}</span>
         </div>
         <div class="line">${line}</div>
       </section>
@@ -504,19 +642,23 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
       ${adder}
       ${S.data.sample ? `<div class="sample">Showing sample data <button data-act="clearsample">${S.confirmDel === "__sample" ? "Tap again to clear" : "Clear it"}</button></div>` : ""}
       <section class="stats">
-        <div class="stat"><b>${streak()}</b><small>day streak</small></div>
-        <div class="stat"><b>${bestStreak()}</b><small>best streak</small></div>
-        <div class="stat"><b>${rate(30)}%</b><small>last 30 days</small></div>
+        <div class="stat"><b>${streak()}</b><small>day streak</small>${cmp ? vs(fStreak()) : ""}</div>
+        <div class="stat"><b>${bestStreak()}</b><small>best streak</small>${cmp ? vs(fBest()) : ""}</div>
+        <div class="stat"><b>${rate(30)}%</b><small>last 30 days</small>${cmp ? vs(fRate(30) + "%") : ""}</div>
       </section>
       <section class="card">
-        <div class="card-h"><h2>Consistency</h2><span class="muted" style="font-size:13px">last 18 weeks</span></div>
+        <div class="card-h"><h2>${cmp ? "Your consistency" : "Consistency"}</h2><span class="muted" style="font-size:13px">last 18 weeks</span></div>
         ${heatmap()}
-      </section>`;
+      </section>
+      ${cmp ? `<section class="card">
+        <div class="card-h"><h2>${esc(fName())}'s consistency</h2><span class="muted" style="font-size:13px">last 18 weeks</span></div>
+        ${heatmap(k => fCount(k) || 0, friend().total, true)}
+      </section>` : ""}`;
   }
 
   // ----- Heatmap -----
-  function heatmap() {
-    const W = 18, t = today(), n = S.data.habits.length;
+  function heatmap(count = dayCount, n = S.data.habits.length, isFriend = false) {
+    const W = 18, t = today();
     const start = addDays(t, -t.getDay() - (W - 1) * 7);
     let months = `<span></span>`, lastM = -1;
     for (let w = 0; w < W; w++) {
@@ -529,12 +671,12 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     for (let i = 0; i < W * 7; i++) {
       const d = addDays(start, i), k = keyOf(d);
       if (d > t) { cells += `<span class="cell future"></span>`; continue; }
-      const c = dayCount(k), f = c ? c / Math.max(n, c, 1) : 0;
+      const c = count(k), f = c ? c / Math.max(n, c, 1) : 0;
       const o = f === 0 ? 0 : [0.3, 0.5, 0.75, 1][Math.min(3, Math.ceil(f * 4) - 1)];
       cells += `<span class="cell ${k === keyOf(t) ? "today" : ""}" style="--o:${o}" title="${d.getDate()} ${MON[d.getMonth()]}: ${c} done"></span>`;
     }
     const legend = [0, .3, .5, .75, 1].map(o => `<span class="cell" style="--o:${o}"></span>`).join("");
-    return `<div class="heat-wrap" style="--weeks:${W}">
+    return `<div class="heat-wrap ${isFriend ? "fr" : ""}" style="--weeks:${W}">
       <div class="heat-months">${months}</div>
       <div class="heat">${lbls}${cells}</div>
       <div class="legend">Less ${legend} More</div></div>`;
@@ -545,36 +687,42 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     const wk = period("w", 0), mo = period("m", 0);
     const g = (key, l) => { const gl = goalAt(key); return gl ? `<span class="tag">${l} goal <b>${msDone(gl)}/3</b></span>` : ""; };
     const tags = g(wk.key, "Week") + g(mo.key, "Month") + g(period("y", 0).key, "Year");
+    const cmp = cmpOn();
+    const fg = (key, l) => { const gl = cmp && friend().goals[key]; return gl ? `<span class="tag">${l} <b>${msDone(gl)}/3</b></span>` : ""; };
+    const ftags = cmp ? fg(wk.key, "Week") + fg(mo.key, "Month") + fg(period("y", 0).key, "Year") : "";
     return `
       <section class="card">
-        <div class="card-h"><h2>Tasks per day</h2>
+        <div class="card-h"><h2>${cmp ? "Completion per day" : "Tasks per day"}</h2>
           <div class="seg" role="group" aria-label="Range">${[7, 30, 90].map(r => `<button data-act="range:${r}" aria-pressed="${S.range === r}">${r}d</button>`).join("")}</div></div>
         <div class="readout" id="readout"></div>
         <div id="chart"></div>
       </section>
       <section class="stats">
-        <div class="stat"><b>${streak()}</b><small>day streak</small></div>
-        <div class="stat"><b>${rate(7)}%</b><small>this week</small></div>
-        <div class="stat"><b>${rate(90)}%</b><small>90 days</small></div>
+        <div class="stat"><b>${streak()}</b><small>day streak</small>${cmp ? vs(fStreak()) : ""}</div>
+        <div class="stat"><b>${rate(7)}%</b><small>this week</small>${cmp ? vs(fRate(7) + "%") : ""}</div>
+        <div class="stat"><b>${rate(90)}%</b><small>90 days</small>${cmp ? vs(fRate(90) + "%") : ""}</div>
       </section>
-      ${tags ? `<div class="goal-line">${tags}</div>` : ""}`;
+      ${tags ? `<div class="goal-line">${cmp ? `<span class="who">You</span>` : ""}${tags}</div>` : ""}
+      ${ftags ? `<div class="goal-line"><span class="who">${esc(fName())}</span>${ftags}</div>` : ""}`;
   }
 
   function drawChart() {
     const box = document.getElementById("chart"); if (!box) return;
     const R = S.range, W = Math.max(280, box.clientWidth || 340), H = 190;
-    const L = 26, Rp = 10, T = 10, B = 24;
+    const cmp = cmpOn(), n = S.data.habits.length;
+    const L = cmp ? 34 : 26, Rp = 10, T = 10, B = 24;
     const days = Array.from({ length: R }, (_, i) => addDays(today(), i - R + 1));
-    const vals = days.map(d => dayCount(keyOf(d)));
-    const max = Math.max(1, ...vals);
-    const step = max <= 5 ? 1 : max <= 10 ? 2 : Math.ceil(max / 5);
+    const vals = days.map(d => cmp ? pctOf(doneOn(keyOf(d)), n) : dayCount(keyOf(d)));
+    const fvals = cmp ? days.map(d => pctOf(fCount(keyOf(d)), friend().total)) : [];
+    const max = cmp ? 100 : Math.max(1, ...vals);
+    const step = cmp ? 25 : max <= 5 ? 1 : max <= 10 ? 2 : Math.ceil(max / 5);
     const yMax = Math.ceil(max / step) * step;
     const x = i => L + (R === 1 ? 0 : i * (W - L - Rp) / (R - 1));
     const y = v => T + (H - T - B) * (1 - v / yMax);
     let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Tasks completed per day, last ${R} days">`;
     for (let v = 0; v <= yMax; v += step) {
       s += `<line x1="${L}" x2="${W - Rp}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1" ${v ? 'stroke-dasharray="2 4"' : ""}/>`;
-      s += `<text x="${L - 8}" y="${y(v) + 3.5}" text-anchor="end">${v}</text>`;
+      s += `<text x="${L - 8}" y="${y(v) + 3.5}" text-anchor="end">${v}${cmp ? "%" : ""}</text>`;
     }
     const ticks = R === 7 ? days.map((_, i) => i) : [0, Math.round((R - 1) / 3), Math.round(2 * (R - 1) / 3), R - 1];
     ticks.forEach(i => {
@@ -585,6 +733,12 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     const hi = S.hover == null ? R - 1 : S.hover;
     s += `<line x1="${x(hi)}" x2="${x(hi)}" y1="${T}" y2="${H - B}" stroke="var(--muted)" stroke-width="1" opacity=".5"/>`;
     const c = "var(--fg)";
+    if (cmp) {
+      const fp = fvals.map((v, i) => v == null ? null : `${x(i).toFixed(1)},${y(v).toFixed(1)}`).filter(Boolean);
+      if (fp.length) s += `<path d="M${fp.join("L")}" fill="none" stroke="var(--muted)" stroke-width="2" stroke-dasharray="5 4" stroke-linejoin="round"/>`;
+      if (R === 7) fvals.forEach((v, i) => { if (v != null) s += `<circle cx="${x(i)}" cy="${y(v)}" r="2.5" fill="var(--muted)"/>`; });
+      if (fvals[hi] != null) s += `<circle cx="${x(hi)}" cy="${y(fvals[hi])}" r="4.5" fill="var(--muted)" stroke="var(--surface)" stroke-width="2"/>`;
+    }
     const pts = vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`);
     s += `<path d="M${pts.join("L")}L${x(R - 1)},${y(0)}L${x(0)},${y(0)}Z" fill="${c}" opacity=".1"/>`;
     s += `<path d="M${pts.join("L")}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>`;
@@ -595,7 +749,9 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
 
     const d = days[hi];
     document.getElementById("readout").innerHTML =
-      `<span class="d">${hi === R - 1 ? "Today" : DOW[d.getDay()] + " " + d.getDate() + " " + MON[d.getMonth()]}</span><span><b>${vals[hi]}</b> done</span>`;
+      `<span class="d">${hi === R - 1 ? "Today" : DOW[d.getDay()] + " " + d.getDate() + " " + MON[d.getMonth()]}</span>` +
+      (cmp ? `<span class="key"><i></i>You <b>${vals[hi]}%</b></span><span class="key"><i class="fr"></i>${esc(fName())} <b>${fvals[hi] == null ? "–" : fvals[hi] + "%"}</b></span>`
+           : `<span><b>${vals[hi]}</b> done</span>`);
 
     const svg = box.querySelector("svg");
     const pick = e => {
@@ -623,7 +779,8 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
       const og = goalAt(period(sc, 0).key), n = msDone(og);
       return `<button class="gov" data-act="gscope:${sc}" aria-pressed="${S.gScope === sc}">
         <small>${SCOPES[sc]}</small><b>${og ? n + "/3" : "–"}</b>
-        <span class="bar"><i style="width:${og ? Math.round(100 * n / 3) : 0}%"></i></span></button>`;
+        <span class="bar"><i style="width:${og ? Math.round(100 * n / 3) : 0}%"></i></span>
+        ${cmpOn() ? (() => { const fg = friend().goals[period(sc, 0).key]; return `<em>${esc(fName())} ${fg ? msDone(fg) + "/3" : "–"}</em>`; })() : ""}</button>`;
     }).join("");
 
     const sfx = per.key.replace(/[^a-z0-9]/gi, "_");
@@ -651,6 +808,18 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
           <span class="box">${ICON.check}</span><span class="name">${esc(m.text || "Milestone " + (i + 1))}</span></button>`).join("")}</div>`;
     }
 
+    let friendGoal = "";
+    if (cmpOn()) {
+      const fg = friend().goals[per.key], word = S.gScope === "w" ? "week" : S.gScope === "m" ? "month" : "year";
+      friendGoal = `<section class="card fr-goal">
+        <div class="mini-h"><span class="eyebrow">${esc(fName())}'s ${SCOPES[S.gScope].toLowerCase()} goal</span>${fg ? `<span class="muted" style="font-size:13px">${msDone(fg)} of 3</span>` : ""}</div>
+        ${fg ? `<h2 class="gtitle">${esc(fg.title)}</h2>
+          <div class="bar"><i style="width:${Math.round(100 * msDone(fg) / 3)}%"></i></div>
+          <div class="mslist">${fg.ms.map(m => `<div class="item ${m.done ? "done" : ""}"><span class="box">${ICON.check}</span><span class="name">${esc(m.text)}</span></div>`).join("")}</div>`
+          : `<p class="muted" style="margin:0">${esc(fName())} hasn't shared a goal for this ${word}.</p>`}
+      </section>`;
+    }
+
     return `
       <div class="govs" role="group" aria-label="Goal period">${overview}</div>
       <section class="card">
@@ -660,7 +829,8 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
           <button class="arrow" data-act="gnext" aria-label="Next period">${ICON.right}</button>
         </div>
         ${content}
-      </section>`;
+      </section>
+      ${friendGoal}`;
   }
 
   // ---------- actions ----------
@@ -687,7 +857,8 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     if (held) { held = false; e.preventDefault(); return; }
     const b = e.target.closest("[data-act]"); if (!b) return;
     const [act, ...rest] = b.dataset.act.split(":"); const arg = rest.join(":");
-    if (act !== "del" && act !== "gremove" && act !== "clearsample") S.confirmDel = null;
+    if (act !== "del" && act !== "gremove" && act !== "clearsample" && act !== "cmpremove") S.confirmDel = null;
+    S.flash = "";
     switch (act) {
       case "tab": S.tab = arg; S.editing = false; S.hover = null; store.set("tab", arg); window.scrollTo(0, 0); break;
       case "day": S.day = arg; break;
@@ -708,6 +879,12 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
       case "gprev": S.gOffset--; S.gEdit = false; break;
       case "gnext": S.gOffset++; S.gEdit = false; break;
       case "gedit": S.gEdit = true; break;
+      case "compare": S.compare = !S.compare; store.set("compare", S.compare ? "1" : "0"); S.cmpPanel = false; S.cmpErr = false; S.hover = null; break;
+      case "cmppanel": S.cmpPanel = !(S.cmpPanel || !friend()); S.cmpErr = false; break;
+      case "cmpremove": {
+        if (S.confirmDel !== "__friend") { S.confirmDel = "__friend"; break; }
+        S.confirmDel = null; saveFriend(null); S.cmpPanel = false; break;
+      }
       case "gcancel": S.gEdit = false; break;
       case "gms": {
         const g = goalAt(period(S.gScope, S.gOffset).key);
@@ -745,6 +922,17 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
     e.preventDefault();
     if (e.target.id === "habitForm") {
       const i = document.getElementById("habitInput"); const v = i.value; i.value = ""; addHabit(v);
+    } else if (e.target.id === "shareForm") {
+      const name = (document.getElementById("myName").value || "").trim().slice(0, 30) || "Friend";
+      store.set("myName", name);
+      const url = location.origin + location.pathname + "#f=" + shareCode(name);
+      S.shareUrl = url; render();
+      if (navigator.share) navigator.share({ title: "My Daily Streaks progress", url }).catch(() => {});
+      else if (navigator.clipboard) navigator.clipboard.writeText(url).then(() => { S.flash = "Link copied"; render(); }).catch(() => {});
+    } else if (e.target.id === "friendForm") {
+      const inp = document.getElementById("friendLink"), f = parseFriend(inp.value);
+      if (!f) { S.cmpErr = true; render(); return; }
+      inp.value = ""; saveFriend(f); S.cmpErr = false; S.cmpPanel = false; S.flash = `Added ${f.name}'s progress`; render();
     } else if (e.target.id === "goalForm") {
       const key = e.target.dataset.key, sfx = key.replace(/[^a-z0-9]/gi, "_");
       const inputs = [document.getElementById("gT_" + sfx), ...[0, 1, 2].map(i => document.getElementById(`gM${i}_${sfx}`))];
@@ -770,7 +958,7 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
   let rz; addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => S.tab === "board" && drawChart(), 120); });
   // other tabs/windows of the app keep in step; a new day re-renders on return
   addEventListener("storage", e => { if (e.key === DATA_KEY) { S.data = load(); render(); } });
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) { S.data = load(); render(); } });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { S.data = load(); friendCache = loadFriend(); render(); } });
 
   syncThemeColor();
   render();

@@ -5,9 +5,10 @@ A habit tracker that runs as a single web page. It works offline and you can add
 - **Today:** a 7-day strip, a daily habit checklist, current and best streaks, a 30-day completion rate and an 18-week activity heatmap.
 - **Board:** a chart of tasks done per day over 7, 30 or 90 days.
 - **Goals:** one weekly, monthly and yearly goal, each broken into 3 milestones to tick off.
+- **Compare with a friend:** a button in the header overlays a friend's progress on every graph. You swap progress by share link, and each link is a snapshot.
 - **Light and dark themes**, using only bone white, dark grey and mid grey.
 
-Data is saved in the browser on your device (`localStorage`). Nothing is sent anywhere, and data doesn't sync between devices.
+Data is saved in the browser on your device (`localStorage`). Nothing is sent anywhere unless you share a progress link yourself, and data doesn't sync between devices.
 
 ## Install on iPhone
 
